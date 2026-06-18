@@ -18,7 +18,7 @@ export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, null);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { username: "gestor", password: "Senha@123" }
+    defaultValues: { username: "", password: "" }
   });
 
   return (

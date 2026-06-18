@@ -142,23 +142,25 @@ export async function getStockProducts(activeOnly = false) {
 
 export async function getNewsForUser(session: SessionUser, date = todayISO()) {
   if (!db) return demoNews;
-  return db.query.news.findMany({
+  const rows = await db.query.news.findMany({
     where: and(
       lte(news.publishedAt, date),
       gte(news.expiresAt, date),
       or(
         eq(news.audience, "todos"),
         session.role === "garcom" ? eq(news.audience, "garcons") : undefined,
-        sql`exists (
-          select 1 from ${newsRecipients}
-          where ${newsRecipients.newsId} = ${news.id}
-          and ${newsRecipients.userId} = ${session.id}
-        )`
+        eq(news.audience, "usuarios")
       )
     ),
     with: { recipients: true },
     orderBy: [desc(news.publishedAt)]
   });
+
+  return rows.filter((item) =>
+    item.audience === "todos" ||
+    (session.role === "garcom" && item.audience === "garcons") ||
+    (item.audience === "usuarios" && item.recipients.some((recipient) => recipient.userId === session.id))
+  );
 }
 
 export async function getAuditLogs(filters: Filters = {}) {
