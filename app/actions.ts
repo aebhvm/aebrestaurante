@@ -19,6 +19,7 @@ import {
   stockRequestSchema,
   stockStatusSchema,
   taskSchema,
+  updateUserSchema,
   userSchema
 } from "@/lib/validators";
 import { todayISO } from "@/lib/utils";
@@ -91,7 +92,7 @@ export async function createUserAction(formData: FormData) {
     password: requireField(formData, "password"),
     role: requireField(formData, "role")
   });
-  if (!parsed.success) goToUsersWith("Preencha nome, usuario, cargo e uma senha com pelo menos 6 caracteres.");
+  if (!parsed.success) goToUsersWith("Preencha nome, usuario, cargo e uma senha com pelo menos 4 caracteres.");
 
   const database = requireDb();
   const existing = await database.query.users.findFirst({ where: eq(users.username, parsed.data.username) });
@@ -102,6 +103,68 @@ export async function createUserAction(formData: FormData) {
   await audit("user", created.id, "create", session.id, created.role);
   revalidatePath("/usuarios");
   goToUsersWith("Usuario criado com sucesso.", "ok");
+}
+
+export async function updateUserAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const parsed = updateUserSchema.safeParse({
+    id: requireField(formData, "id"),
+    name: requireField(formData, "name").trim(),
+    username: requireField(formData, "username").trim().toLowerCase(),
+    password: requireField(formData, "password").trim(),
+    role: requireField(formData, "role"),
+    active: requireField(formData, "active")
+  });
+  if (!parsed.success) goToUsersWith("Revise os dados do usuario. A senha nova deve ter pelo menos 4 caracteres.");
+
+  if (parsed.data.id === session.id && (parsed.data.role !== "gestor" || !parsed.data.active)) {
+    goToUsersWith("Voce nao pode remover seu proprio acesso de gestor.");
+  }
+
+  const database = requireDb();
+  const existing = await database.query.users.findFirst({ where: eq(users.id, parsed.data.id) });
+  if (!existing) goToUsersWith("Usuario nao encontrado.");
+
+  const duplicate = await database.query.users.findFirst({ where: eq(users.username, parsed.data.username) });
+  if (duplicate && duplicate.id !== parsed.data.id) goToUsersWith("Ja existe outro usuario com esse login.");
+
+  const patch = parsed.data.password
+    ? {
+        name: parsed.data.name,
+        username: parsed.data.username,
+        role: parsed.data.role,
+        active: parsed.data.active,
+        passwordHash: await bcrypt.hash(parsed.data.password, 12),
+        updatedAt: new Date()
+      }
+    : {
+        name: parsed.data.name,
+        username: parsed.data.username,
+        role: parsed.data.role,
+        active: parsed.data.active,
+        updatedAt: new Date()
+      };
+
+  await database.update(users).set(patch).where(eq(users.id, parsed.data.id));
+  await audit("user", parsed.data.id, "update", session.id, parsed.data.role);
+  revalidatePath("/usuarios");
+  goToUsersWith("Usuario atualizado com sucesso.", "ok");
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  if (!Number.isInteger(id) || id <= 0) goToUsersWith("Usuario invalido.");
+  if (id === session.id) goToUsersWith("Voce nao pode excluir o proprio usuario logado.");
+
+  const database = requireDb();
+  const existing = await database.query.users.findFirst({ where: eq(users.id, id) });
+  if (!existing) goToUsersWith("Usuario nao encontrado.");
+
+  await audit("user", id, "delete", session.id, existing.role);
+  await database.delete(users).where(eq(users.id, id));
+  revalidatePath("/usuarios");
+  goToUsersWith("Usuario excluido com sucesso.", "ok");
 }
 
 export async function updateLoginSettingsAction(formData: FormData) {

@@ -2,14 +2,26 @@ import { z } from "zod";
 
 export const loginSchema = z.object({
   username: z.string().min(2),
-  password: z.string().min(6)
+  password: z.string().min(4)
 });
 
 export const userSchema = z.object({
   name: z.string().min(2),
   username: z.string().min(2).max(80),
-  password: z.string().min(6),
+  password: z.string().min(4),
   role: z.enum(["gestor", "garcom", "barman", "estoquista"])
+});
+
+export const updateUserSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  name: z.string().min(2),
+  username: z.string().min(2).max(80),
+  password: z.string(),
+  role: z.enum(["gestor", "garcom", "barman", "estoquista"]),
+  active: z.coerce.boolean().default(true)
+}).refine((data) => data.password.length === 0 || data.password.length >= 4, {
+  message: "Senha deve ter pelo menos 4 caracteres.",
+  path: ["password"]
 });
 
 export const taskSchema = z.object({
