@@ -12,13 +12,13 @@ export const protectedRoutes: Record<string, UserRole[]> = {
   "/garcom": ["garcom", "barman"],
   "/estoque": ["estoquista", "gestor"],
   "/usuarios": ["gestor"],
-  "/tarefas": ["gestor", "garcom", "barman"],
-  "/pracas": ["gestor", "garcom", "barman"],
-  "/escalas": ["gestor", "garcom", "barman"],
-  "/descansos": ["gestor", "garcom", "barman"],
+  "/tarefas": ["gestor"],
+  "/pracas": ["gestor"],
+  "/escalas": ["gestor"],
+  "/descansos": ["gestor"],
   "/fichas": ["gestor", "barman", "garcom"],
   "/pedidos": ["gestor", "barman", "estoquista"],
-  "/noticias": ["gestor", "garcom", "barman", "estoquista"],
+  "/noticias": ["gestor", "garcom", "barman"],
   "/historico": ["gestor", "estoquista"]
 };
 

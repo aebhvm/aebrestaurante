@@ -112,6 +112,7 @@ CREATE TABLE stock_products (
 
 CREATE TABLE stock_requests (
   id serial PRIMARY KEY,
+  order_number varchar(40),
   requester_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   product_id integer NOT NULL REFERENCES stock_products(id) ON DELETE RESTRICT,
   product varchar(160) NOT NULL,
@@ -177,6 +178,7 @@ CREATE INDEX bar_recipes_name_idx ON bar_recipes(drink_name);
 CREATE INDEX bar_recipes_category_idx ON bar_recipes(category);
 CREATE INDEX stock_products_active_idx ON stock_products(active);
 CREATE INDEX stock_requests_requester_date_idx ON stock_requests(requester_id, request_date);
+CREATE INDEX stock_requests_order_number_idx ON stock_requests(order_number);
 CREATE INDEX stock_requests_status_idx ON stock_requests(status);
 CREATE INDEX stock_requests_date_idx ON stock_requests(request_date);
 CREATE INDEX news_active_idx ON news(published_at, expires_at);

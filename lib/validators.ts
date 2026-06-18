@@ -35,11 +35,6 @@ export const taskSchema = z.object({
   notes: z.string().optional()
 });
 
-export const stockRequestSchema = z.object({
-  productId: z.coerce.number().int().positive(),
-  quantity: z.coerce.number().int().positive()
-});
-
 export const stockProductSchema = z.object({
   name: z.string().min(2),
   unit: z.string().min(1),
@@ -49,9 +44,20 @@ export const stockProductSchema = z.object({
 export const stationSchema = z.object({
   id: z.coerce.number().int().positive().optional(),
   name: z.string().min(2),
-  description: z.string().optional(),
-  responsibleId: z.coerce.number().int().positive(),
-  stationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  description: z.string().optional()
+});
+
+export const shiftSchema = z.object({
+  employeeId: z.coerce.number().int().positive(),
+  stationId: z.coerce.number().int().positive(),
+  shiftDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+});
+
+export const breakSchema = z.object({
+  employeeId: z.coerce.number().int().positive(),
+  breakDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startsAt: z.string().regex(/^\d{2}:\d{2}$/),
+  endsAt: z.string().regex(/^\d{2}:\d{2}$/)
 });
 
 export const stockStatusSchema = z.object({
@@ -61,7 +67,6 @@ export const stockStatusSchema = z.object({
 
 export const recipeSchema = z.object({
   drinkName: z.string().min(2),
-  category: z.string().min(2),
   preparation: z.string().min(5),
   glass: z.string().min(2),
   garnish: z.string().optional(),

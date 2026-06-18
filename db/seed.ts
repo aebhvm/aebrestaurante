@@ -2,8 +2,9 @@ import bcrypt from "bcryptjs";
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import { appSettings, barRecipes, breaks, news, stations, stockProducts, stockRequests, tasks, users, shifts } from "@/db/schema";
+import { todayISO } from "@/lib/utils";
 
-const today = new Date().toISOString().slice(0, 10);
+const today = todayISO();
 
 async function main() {
   if (!process.env.DATABASE_URL) {
@@ -94,6 +95,7 @@ async function main() {
   ]);
 
   await db.insert(stockRequests).values({
+    orderNumber: "PED-SEED-001",
     requesterId: barman.id,
     productId: xarope.id,
     product: xarope.name,

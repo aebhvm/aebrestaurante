@@ -15,14 +15,15 @@ import { todayISO } from "@/lib/utils";
 export default async function StockDashboard() {
   const session = (await getSession())!;
   const [requests, products] = await Promise.all([getStockRequests(session, { date: todayISO() }), getStockProducts()]);
+  const orders = Array.from(new Set(requests.map((item) => item.orderNumber ?? `LEG-${item.id}`))).map((key) => requests.find((item) => (item.orderNumber ?? `LEG-${item.id}`) === key)!);
   return (
     <>
       <PageHeader title="Estoque" description="Cadastre produtos e acompanhe pedidos do dia." />
       <section className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Pendentes" value={requests.filter((item) => item.status === "solicitado").length} icon={Boxes} tone="amber" />
-        <StatCard label="Separados" value={requests.filter((item) => item.status === "separado").length} icon={PackageCheck} />
-        <StatCard label="Entregues" value={requests.filter((item) => item.status === "entregue").length} icon={CheckCircle2} tone="green" />
-        <StatCard label="Histórico do dia" value={requests.length} icon={History} />
+        <StatCard label="Pendentes" value={orders.filter((item) => item.status === "solicitado").length} icon={Boxes} tone="amber" />
+        <StatCard label="Separados" value={orders.filter((item) => item.status === "separado").length} icon={PackageCheck} />
+        <StatCard label="Entregues" value={orders.filter((item) => item.status === "entregue").length} icon={CheckCircle2} tone="green" />
+        <StatCard label="Histórico do dia" value={orders.length} icon={History} />
       </section>
       <div className="mt-6">
         <StockTable requests={requests} canUpdate />

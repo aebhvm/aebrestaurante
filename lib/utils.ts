@@ -6,9 +6,30 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDate(value: string | Date) {
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value));
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeZone: "America/Sao_Paulo" }).format(new Date(value));
 }
 
-export function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+function brasiliaParts(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(date).reduce<Record<string, string>>((parts, item) => {
+    if (item.type !== "literal") parts[item.type] = item.value;
+    return parts;
+  }, {});
+}
+
+export function todayISO(date = new Date()) {
+  const parts = brasiliaParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function brasiliaTime(date = new Date()) {
+  const parts = brasiliaParts(date);
+  return `${parts.hour}:${parts.minute}`;
 }

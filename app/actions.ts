@@ -4,25 +4,26 @@ import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db, requireDb } from "@/db";
-import { appSettings, auditLogs, barRecipes, news, stations, stockProducts, stockRequests, tasks, users } from "@/db/schema";
+import { appSettings, auditLogs, barRecipes, breaks, news, shifts, stations, stockProducts, stockRequests, tasks, users } from "@/db/schema";
 import { clearSession, getSession, setSession } from "@/lib/session";
 import { dashboardForRole } from "@/lib/permissions";
 import {
+  breakSchema,
   loginSchema,
   loginSettingsSchema,
   newsSchema,
   recipeSchema,
+  shiftSchema,
   stationSchema,
   stockProductSchema,
-  stockRequestSchema,
   stockStatusSchema,
   taskSchema,
   updateUserSchema,
   userSchema
 } from "@/lib/validators";
-import { todayISO } from "@/lib/utils";
+import { brasiliaTime, todayISO } from "@/lib/utils";
 import { demoUsers } from "@/lib/demo-data";
 
 function requireField(formData: FormData, field: string) {
@@ -208,27 +209,37 @@ export async function createTaskAction(formData: FormData) {
 
 export async function createStockRequestAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
-  const parsed = stockRequestSchema.parse({
-    productId: requireField(formData, "productId"),
-    quantity: requireField(formData, "quantity")
+  const selected = formData.getAll("productId").map((value, index) => ({
+    productId: Number(value),
+    quantity: Number(formData.getAll("quantity")[index])
+  })).filter((item) => Number.isInteger(item.productId) && item.productId > 0 && Number.isInteger(item.quantity) && item.quantity > 0);
+  if (!selected.length) redirect("/pedidos?erro=Selecione ao menos um produto e informe a quantidade.");
+
+  const database = requireDb();
+  const products = await database.query.stockProducts.findMany({
+    where: inArray(stockProducts.id, selected.map((item) => item.productId))
   });
-  const product = await requireDb().query.stockProducts.findFirst({ where: eq(stockProducts.id, parsed.productId) });
-  if (!product || !product.active) throw new Error("Produto invalido ou inativo.");
-  const now = new Date();
-  const [created] = await requireDb()
-    .insert(stockRequests)
-    .values({
-      ...parsed,
-      product: product.name,
-      unit: product.unit,
+  const orderNumber = `PED-${todayISO().replaceAll("-", "")}-${Date.now().toString().slice(-6)}`;
+  const values = selected.flatMap((item) => {
+    const product = products.find((candidate) => candidate.id === item.productId && candidate.active);
+    return product ? [{
+      orderNumber,
       requesterId: session.id,
+      productId: product.id,
+      product: product.name,
+      quantity: item.quantity,
+      unit: product.unit,
       requestDate: todayISO(),
-      requestTime: now.toTimeString().slice(0, 5),
+      requestTime: brasiliaTime(),
       createdBy: session.id
-    })
-    .returning();
-  await audit("stock_request", created.id, "create", session.id, created.status);
+    }] : [];
+  });
+  if (!values.length) redirect("/pedidos?erro=Nenhum produto válido foi selecionado.");
+  const created = await database.insert(stockRequests).values(values).returning();
+  await audit("stock_request", created[0].id, "create", session.id, created[0].status);
   revalidatePath("/pedidos");
+  revalidatePath("/estoque");
+  redirect("/pedidos?ok=Pedido criado com sucesso.");
 }
 
 export async function createStockProductAction(formData: FormData) {
@@ -246,8 +257,10 @@ export async function createStockProductAction(formData: FormData) {
 
 export async function updateStockStatusAction(formData: FormData) {
   const session = await requireUser(["gestor", "estoquista"]);
+  const ids = requireField(formData, "ids").split(",").map(Number).filter((id) => Number.isInteger(id) && id > 0);
+  if (!ids.length) redirect("/pedidos?erro=Pedido inválido.");
   const parsed = stockStatusSchema.parse({
-    id: requireField(formData, "id"),
+    id: ids[0],
     status: requireField(formData, "status")
   });
   const patch =
@@ -256,7 +269,7 @@ export async function updateStockStatusAction(formData: FormData) {
       : parsed.status === "entregue"
         ? { status: parsed.status, deliveredBy: session.id, deliveredAt: new Date(), updatedAt: new Date() }
         : { status: parsed.status, updatedAt: new Date() };
-  await requireDb().update(stockRequests).set(patch).where(eq(stockRequests.id, parsed.id));
+  await requireDb().update(stockRequests).set(patch).where(inArray(stockRequests.id, ids));
   await audit("stock_request", parsed.id, "status_update", session.id, parsed.status);
   revalidatePath("/pedidos");
   revalidatePath("/estoque");
@@ -266,7 +279,6 @@ export async function createRecipeAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
   const parsed = recipeSchema.parse({
     drinkName: requireField(formData, "drinkName"),
-    category: requireField(formData, "category"),
     preparation: requireField(formData, "preparation"),
     glass: requireField(formData, "glass"),
     garnish: requireField(formData, "garnish"),
@@ -274,16 +286,19 @@ export async function createRecipeAction(formData: FormData) {
   });
   const image = formData.get("photo");
   const photoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "recipes") : undefined;
-  const ingredients = requireField(formData, "ingredients")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const [item, amount = "a gosto"] = line.split("-");
-      return { item: item.trim(), amount: amount.trim() };
-    });
-  const [created] = await requireDb().insert(barRecipes).values({ ...parsed, photoUrl, ingredients, createdBy: session.id }).returning();
-  await audit("recipe", created.id, "create", session.id, created.category);
+  const productIds = formData.getAll("ingredientProductId").map(Number);
+  const amounts = formData.getAll("ingredientAmount").map(String);
+  const products = productIds.length
+    ? await requireDb().query.stockProducts.findMany({ where: inArray(stockProducts.id, productIds) })
+    : [];
+  const ingredients = productIds.flatMap((productId, index) => {
+    const product = products.find((item) => item.id === productId);
+    const amount = amounts[index]?.trim();
+    return product && amount ? [{ productId, item: product.name, amount }] : [];
+  });
+  if (!ingredients.length) redirect("/fichas?erro=Adicione ao menos um ingrediente cadastrado no estoque.");
+  const [created] = await requireDb().insert(barRecipes).values({ ...parsed, category: "Bar", photoUrl, ingredients, createdBy: session.id }).returning();
+  await audit("recipe", created.id, "create", session.id, "Bar");
   revalidatePath("/fichas");
 }
 
@@ -292,21 +307,64 @@ export async function upsertStationAction(formData: FormData) {
   const parsed = stationSchema.parse({
     id: requireField(formData, "id") || undefined,
     name: requireField(formData, "name"),
-    description: requireField(formData, "description"),
-    responsibleId: requireField(formData, "responsibleId"),
-    stationDate: requireField(formData, "stationDate") || todayISO()
+    description: requireField(formData, "description")
   });
   const database = requireDb();
   const [saved] = parsed.id
     ? await database
         .update(stations)
-        .set({ name: parsed.name, description: parsed.description, responsibleId: parsed.responsibleId, stationDate: parsed.stationDate, updatedAt: new Date() })
+        .set({ name: parsed.name, description: parsed.description, updatedAt: new Date() })
         .where(eq(stations.id, parsed.id))
         .returning()
-    : await database.insert(stations).values({ ...parsed, createdBy: session.id }).returning();
+    : await database.insert(stations).values({ ...parsed, responsibleId: session.id, stationDate: todayISO(), createdBy: session.id }).returning();
   await audit("station", saved.id, parsed.id ? "update" : "create", session.id);
   revalidatePath("/pracas");
   revalidatePath("/gestor");
+  revalidatePath("/escalas");
+}
+
+export async function createShiftAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const parsed = shiftSchema.parse({
+    employeeId: requireField(formData, "employeeId"),
+    stationId: requireField(formData, "stationId"),
+    shiftDate: requireField(formData, "shiftDate") || todayISO()
+  });
+  const employee = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.employeeId) });
+  if (!employee || !employee.active || !["garcom", "barman"].includes(employee.role)) redirect("/escalas?erro=Funcionário inválido.");
+  await requireDb().insert(shifts).values({
+    waiterId: employee.role === "garcom" ? employee.id : null,
+    bartenderId: employee.role === "barman" ? employee.id : null,
+    stationId: parsed.stationId,
+    shiftDate: parsed.shiftDate,
+    createdBy: session.id
+  });
+  revalidatePath("/escalas");
+  revalidatePath("/gestor");
+  redirect(`/escalas?date=${parsed.shiftDate}&ok=Escala criada com sucesso.`);
+}
+
+export async function createBreakAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const parsed = breakSchema.parse({
+    employeeId: requireField(formData, "employeeId"),
+    breakDate: requireField(formData, "breakDate") || todayISO(),
+    startsAt: requireField(formData, "startsAt"),
+    endsAt: requireField(formData, "endsAt")
+  });
+  const employee = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.employeeId) });
+  if (!employee || !employee.active || !["garcom", "barman"].includes(employee.role)) redirect("/descansos?erro=Funcionário inválido.");
+  await requireDb().insert(breaks).values({
+    waiterId: employee.role === "garcom" ? employee.id : null,
+    bartenderId: employee.role === "barman" ? employee.id : null,
+    breakDate: parsed.breakDate,
+    startsAt: parsed.startsAt,
+    endsAt: parsed.endsAt,
+    createdBy: session.id
+  });
+  revalidatePath("/descansos");
+  revalidatePath("/gestor");
+  redirect(`/descansos?date=${parsed.breakDate}&ok=Descanso criado com sucesso.`);
 }
 
 export async function deleteStationAction(formData: FormData) {

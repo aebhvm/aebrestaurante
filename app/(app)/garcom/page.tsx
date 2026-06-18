@@ -1,16 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
-import { getBreaks, getNewsForUser, getShifts, getStations, getTasks } from "@/lib/data";
+import { getBreaks, getNewsForUser, getShifts, getTasks } from "@/lib/data";
 import { getSession } from "@/lib/session";
 import { todayISO } from "@/lib/utils";
 
 export default async function WaiterDashboard() {
   const session = (await getSession())!;
   const date = todayISO();
-  const [tasks, stations, shifts, breaks, news] = await Promise.all([
+  const [tasks, shifts, breaks, news] = await Promise.all([
     getTasks(session, { date }),
-    getStations(session, { date }),
     getShifts(session, { date }),
     getBreaks(session, { date }),
     getNewsForUser(session, date)
@@ -21,9 +20,8 @@ export default async function WaiterDashboard() {
       <PageHeader title="Meu painel" description="Somente informações vinculadas ao seu usuário." />
       <div className="grid gap-4 lg:grid-cols-2">
         <ListCard title="Minhas tarefas" items={tasks.map((item) => `${item.taskTime} - ${item.title}`)} />
-        <ListCard title="Minha praca" items={stations.map((item) => `${item.name} - ${item.notes ?? "sem observacoes"}`)} />
         <ListCard title="Meu descanso" items={breaks.map((item) => `${item.startsAt} as ${item.endsAt}`)} />
-        <ListCard title="Minha escala" items={shifts.map((item) => `${item.startsAt} as ${item.endsAt} - ${item.functionName}`)} />
+        <ListCard title="Minha escala" items={shifts.map((item) => item.station?.name ?? "Sem praça definida")} />
       </div>
       <Card className="mt-4">
         <CardHeader>

@@ -52,8 +52,8 @@ export const demoStockProducts = [
 ];
 
 export const demoStockRequests = [
-  { id: 1, requesterId: 3, productId: 1, requester: demoUsers[2], productRecord: demoStockProducts[0], product: "Xarope de acucar", quantity: 2, unit: "garrafa", reason: null, requestDate: today, requestTime: "18:20", status: "solicitado" },
-  { id: 2, requesterId: 1, productId: 2, requester: demoUsers[0], productRecord: demoStockProducts[1], product: "Guardanapo premium", quantity: 5, unit: "pacote", reason: null, requestDate: today, requestTime: "15:30", status: "separado" }
+  { id: 1, orderNumber: "PED-DEMO-1", requesterId: 3, productId: 1, requester: demoUsers[2], productRecord: demoStockProducts[0], product: "Xarope de acucar", quantity: 2, unit: "garrafa", reason: null, requestDate: today, requestTime: "18:20", status: "solicitado" },
+  { id: 2, orderNumber: "PED-DEMO-2", requesterId: 1, productId: 2, requester: demoUsers[0], productRecord: demoStockProducts[1], product: "Guardanapo premium", quantity: 5, unit: "pacote", reason: null, requestDate: today, requestTime: "15:30", status: "separado" }
 ];
 
 export const demoNews = [

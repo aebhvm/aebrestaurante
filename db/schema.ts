@@ -145,7 +145,7 @@ export const barRecipes = pgTable(
     drinkName: varchar("drink_name", { length: 180 }).notNull(),
     category: varchar("category", { length: 120 }).notNull(),
     photoUrl: text("photo_url"),
-    ingredients: jsonb("ingredients").$type<Array<{ item: string; amount: string }>>().notNull().default(sql`'[]'::jsonb`),
+    ingredients: jsonb("ingredients").$type<Array<{ productId?: number; item: string; amount: string }>>().notNull().default(sql`'[]'::jsonb`),
     preparation: text("preparation").notNull(),
     glass: varchar("glass", { length: 120 }).notNull(),
     garnish: varchar("garnish", { length: 160 }),
@@ -179,6 +179,7 @@ export const stockRequests = pgTable(
   "stock_requests",
   {
     id: serial("id").primaryKey(),
+    orderNumber: varchar("order_number", { length: 40 }),
     requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     productId: integer("product_id").notNull().references(() => stockProducts.id, { onDelete: "restrict" }),
     product: varchar("product", { length: 160 }).notNull(),
@@ -196,6 +197,7 @@ export const stockRequests = pgTable(
   },
   (table) => ({
     requesterDateIdx: index("stock_requests_requester_date_idx").on(table.requesterId, table.requestDate),
+    orderNumberIdx: index("stock_requests_order_number_idx").on(table.orderNumber),
     statusIdx: index("stock_requests_status_idx").on(table.status),
     dateIdx: index("stock_requests_date_idx").on(table.requestDate)
   })

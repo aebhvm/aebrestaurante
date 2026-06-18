@@ -16,7 +16,7 @@ import {
 } from "@/db/schema";
 import { demoBreaks, demoLoginSettings, demoNews, demoRecipes, demoShifts, demoStations, demoStockProducts, demoStockRequests, demoTasks, demoUsers } from "@/lib/demo-data";
 import type { SessionUser } from "@/lib/session";
-import { todayISO } from "@/lib/utils";
+import { brasiliaTime, todayISO } from "@/lib/utils";
 
 type Filters = { date?: string; userId?: number; status?: string; type?: string; q?: string };
 
@@ -36,19 +36,19 @@ export async function getManagerDashboard(date = todayISO()) {
     return {
       pendingTasks: dayTasks.filter((task) => task.status === "pendente").length,
       completedTasks: dayTasks.filter((task) => task.status === "concluido").length,
-      overdueTasks: dayTasks.filter((task) => task.status === "pendente" && task.taskTime < new Date().toTimeString().slice(0, 5)).length,
+      overdueTasks: dayTasks.filter((task) => task.status === "pendente" && task.taskTime < brasiliaTime()).length,
       pendingOrders: demoStockRequests.filter((order) => order.status === "solicitado" && order.requestDate === date).length,
       todaysShifts: demoShifts.filter((shift) => shift.shiftDate === date),
       todaysBreaks: demoBreaks.filter((item) => item.breakDate === date)
     };
   }
 
-  const now = new Date().toTimeString().slice(0, 5);
+  const now = brasiliaTime();
   const [pendingTasks, completedTasks, overdueTasks, pendingOrders, todaysShifts, todaysBreaks] = await Promise.all([
     db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "pendente"), eq(tasks.taskDate, date))),
     db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "concluido"), eq(tasks.taskDate, date))),
     db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "pendente"), eq(tasks.taskDate, date), sql`${tasks.taskTime} < ${now}`)),
-    db.select({ value: count() }).from(stockRequests).where(and(eq(stockRequests.status, "solicitado"), eq(stockRequests.requestDate, date))),
+    db.select({ value: sql<number>`count(distinct coalesce(${stockRequests.orderNumber}, ${stockRequests.id}::text))::int` }).from(stockRequests).where(and(eq(stockRequests.status, "solicitado"), eq(stockRequests.requestDate, date))),
     db.query.shifts.findMany({ where: eq(shifts.shiftDate, date), with: { waiter: true, bartender: true, station: true }, orderBy: [shifts.shiftDate] }),
     db.query.breaks.findMany({ where: eq(breaks.breakDate, date), with: { waiter: true, bartender: true }, orderBy: [breaks.startsAt] })
   ]);
@@ -92,6 +92,12 @@ export async function getStations(session: SessionUser, filters: Filters = {}) {
     filters.date ? eq(stations.stationDate, filters.date) : undefined
   ].filter(Boolean);
   return db.query.stations.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { responsible: true }, orderBy: [desc(stations.stationDate)] });
+}
+
+export async function getStationCatalog() {
+  if (!db) return demoStations;
+  const rows = await db.query.stations.findMany({ orderBy: [stations.name] });
+  return rows.filter((station, index) => rows.findIndex((item) => item.name.toLowerCase() === station.name.toLowerCase()) === index);
 }
 
 export async function getShifts(session: SessionUser, filters: Filters = {}) {

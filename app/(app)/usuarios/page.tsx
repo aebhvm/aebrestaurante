@@ -63,20 +63,20 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
-                <THead><TR><TH>Usuário</TH><TH>Status</TH><TH>Criação</TH><TH>Último acesso</TH><TH className="text-right">Ações</TH></TR></THead>
+                <THead><TR><TH>Usuário</TH><TH>Status</TH><TH className="hidden xl:table-cell">Criação</TH><TH className="hidden xl:table-cell">Último acesso</TH><TH className="text-right">Ações</TH></TR></THead>
                 <TBody>
                   {users.map((user) => (
                     <TR key={user.id}>
                       <TD>
                         <p className="font-medium">{user.name}</p>
-                        <p className="text-xs text-muted-foreground">@{user.username}</p>
+                        <p className="text-xs text-muted-foreground">{user.username}</p>
                         <Badge className="mt-2">{roleLabels[user.role]}</Badge>
                       </TD>
                       <TD>{user.active ? "Ativo" : "Inativo"}</TD>
-                      <TD>{new Date(user.createdAt).toLocaleDateString("pt-BR")}</TD>
-                      <TD>{user.lastAccessAt ? new Date(user.lastAccessAt).toLocaleString("pt-BR") : "-"}</TD>
+                      <TD className="hidden xl:table-cell">{new Date(user.createdAt).toLocaleDateString("pt-BR")}</TD>
+                      <TD className="hidden xl:table-cell">{user.lastAccessAt ? new Date(user.lastAccessAt).toLocaleString("pt-BR") : "-"}</TD>
                       <TD className="align-top">
-                        <details className="group min-w-[300px]">
+                        <details className="group">
                           <summary className="focus-ring ml-auto inline-flex h-8 cursor-pointer list-none items-center justify-center gap-2 rounded-md border bg-background px-2.5 text-sm font-medium hover:bg-muted">
                             <Pencil className="size-4" />
                             Editar

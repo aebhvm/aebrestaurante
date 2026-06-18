@@ -1,23 +1,22 @@
 import Image from "next/image";
 import { createRecipeAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { getRecipes } from "@/lib/data";
+import { getRecipes, getStockProducts } from "@/lib/data";
 import { getSession } from "@/lib/session";
 
 export default async function RecipesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const session = (await getSession())!;
   const params = await searchParams;
-  const recipes = await getRecipes(params.q);
+  const [recipes, products] = await Promise.all([getRecipes(params.q), getStockProducts(true)]);
 
   return (
     <>
-      <PageHeader title="Ficha tecnica do bar" description="Receitas, fotos, ingredientes, preparo e busca por nome." />
+      <PageHeader title="Ficha técnica do bar" description="Receitas, fotos, ingredientes do estoque, preparo e busca por nome." />
       <form className="mb-4 flex gap-2 md:max-w-md">
         <Input name="q" placeholder="Buscar drink" defaultValue={params.q} />
         <Button variant="secondary">Buscar</Button>
@@ -29,13 +28,23 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
             <CardContent>
               <form action={createRecipeAction} className="space-y-3">
                 <Field label="Nome do drink" name="drinkName" />
-                <Field label="Categoria" name="category" />
                 <Field label="Foto" name="photo" type="file" />
-                <div className="space-y-2"><Label>Ingredientes</Label><Textarea name="ingredients" placeholder="Gin - 30 ml" /></div>
+                <div className="space-y-2">
+                  <Label>Ingredientes do estoque</Label>
+                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                    {products.map((product) => (
+                      <div key={product.id} className="grid grid-cols-[1fr_120px] items-center gap-2 rounded-md border p-2">
+                        <input type="hidden" name="ingredientProductId" value={product.id} />
+                        <span className="text-sm font-medium">{product.name}</span>
+                        <Input name="ingredientAmount" aria-label={`Quantidade de ${product.name}`} placeholder="Quantidade" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" required /></div>
                 <Field label="Copo utilizado" name="glass" />
-                <Field label="Guarnicao" name="garnish" />
-                <div className="space-y-2"><Label>Observacoes</Label><Textarea name="notes" /></div>
+                <Field label="Guarnição" name="garnish" />
+                <div className="space-y-2"><Label>Observações</Label><Textarea name="notes" /></div>
                 <Button className="w-full">Salvar ficha</Button>
               </form>
             </CardContent>
@@ -47,12 +56,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
               <div className="relative aspect-[16/9] overflow-hidden rounded-t-lg bg-muted">
                 {recipe.photoUrl ? <Image src={recipe.photoUrl} alt={recipe.drinkName} fill className="object-cover" /> : null}
               </div>
-              <CardHeader>
-                <div className="flex items-center justify-between gap-3">
-                  <CardTitle>{recipe.drinkName}</CardTitle>
-                  <Badge>{recipe.category}</Badge>
-                </div>
-              </CardHeader>
+              <CardHeader><CardTitle>{recipe.drinkName}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
                   <p className="font-medium">Ingredientes</p>
@@ -61,7 +65,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
                   </ul>
                 </div>
                 <div><p className="font-medium">Passo a passo</p><p className="text-muted-foreground">{recipe.preparation}</p></div>
-                <p className="text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnicao"}</p>
+                <p className="text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnição"}</p>
               </CardContent>
             </Card>
           ))}

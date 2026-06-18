@@ -9,7 +9,6 @@ import {
   History,
   LayoutDashboard,
   LogOut,
-  MapPinned,
   Newspaper,
   PauseCircle,
   Users
@@ -23,25 +22,24 @@ import { getSession } from "@/lib/session";
 import { canAccess, dashboardForRole, roleLabels } from "@/lib/permissions";
 
 const nav = [
-  { href: "/gestor", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/garcom", label: "Meu painel", icon: ClipboardList },
-  { href: "/estoque", label: "Estoque", icon: Boxes },
-  { href: "/usuarios", label: "Usuários", icon: Users },
-  { href: "/tarefas", label: "Tarefas", icon: ClipboardList },
-  { href: "/pracas", label: "Praças", icon: MapPinned },
-  { href: "/escalas", label: "Escalas", icon: CalendarClock },
-  { href: "/descansos", label: "Descansos", icon: PauseCircle },
-  { href: "/fichas", label: "Fichas", icon: Coffee },
-  { href: "/pedidos", label: "Pedidos", icon: Boxes },
-  { href: "/noticias", label: "Notícias", icon: Newspaper },
-  { href: "/historico", label: "Histórico", icon: History }
+  { href: "/gestor", label: "Dashboard", icon: LayoutDashboard, roles: ["gestor"] },
+  { href: "/garcom", label: "Meu painel", icon: ClipboardList, roles: ["garcom", "barman"] },
+  { href: "/estoque", label: "Estoque", icon: Boxes, roles: ["gestor", "estoquista"] },
+  { href: "/usuarios", label: "Usuários", icon: Users, roles: ["gestor"] },
+  { href: "/tarefas", label: "Tarefas", icon: ClipboardList, roles: ["gestor"] },
+  { href: "/escalas", label: "Escalas", icon: CalendarClock, roles: ["gestor"] },
+  { href: "/descansos", label: "Descansos", icon: PauseCircle, roles: ["gestor"] },
+  { href: "/fichas", label: "Fichas", icon: Coffee, roles: ["gestor", "garcom", "barman"] },
+  { href: "/pedidos", label: "Pedidos", icon: Boxes, roles: ["gestor", "barman", "estoquista"] },
+  { href: "/noticias", label: "Notícias", icon: Newspaper, roles: ["gestor", "garcom", "barman"] },
+  { href: "/historico", label: "Histórico", icon: History, roles: ["gestor", "estoquista"] }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const [session, settings] = await Promise.all([getSession(), getLoginSettings()]);
   if (!session) redirect("/login");
 
-  const items = nav.filter((item) => canAccess(item.href, session.role));
+  const items = nav.filter((item) => item.roles.includes(session.role) && canAccess(item.href, session.role));
   const brandName = settings.loginEyebrow || "AEB Restaurante";
   const brandSubtitle = settings.loginTitle || "Sistema de operações";
 
@@ -91,9 +89,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">{children}</main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-card p-1 lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card p-1 lg:hidden">
         {items.slice(0, 5).map((item) => (
-          <Link key={item.href} href={item.href} className="flex flex-col items-center gap-1 rounded-md p-2 text-[11px] text-muted-foreground">
+          <Link key={item.href} href={item.href} className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md p-2 text-[11px] text-muted-foreground">
             <item.icon className="size-4" />
             {item.label.split(" ")[0]}
           </Link>
