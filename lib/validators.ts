@@ -8,7 +8,7 @@ export const loginSchema = z.object({
 export const userSchema = z.object({
   name: z.string().min(2),
   username: z.string().min(2).max(80),
-  password: z.string().min(8),
+  password: z.string().min(6),
   role: z.enum(["gestor", "garcom", "barman", "estoquista"])
 });
 
@@ -57,9 +57,9 @@ export const recipeSchema = z.object({
 });
 
 export const loginSettingsSchema = z.object({
-  loginEyebrow: z.string().min(2),
-  loginTitle: z.string().min(2),
-  loginSubtitle: z.string().min(2)
+  loginEyebrow: z.string().trim().min(1).max(120),
+  loginTitle: z.string().trim().min(1).max(220),
+  loginSubtitle: z.string().trim().min(1).max(1000)
 });
 
 export const newsSchema = z.object({

@@ -48,6 +48,10 @@ async function audit(entity: "user" | "task" | "station" | "recipe" | "stock_pro
   await requireDb().insert(auditLogs).values({ entity, entityId, action, actorId, status });
 }
 
+function goToUsersWith(message: string, type: "ok" | "erro" = "erro"): never {
+  redirect(`/usuarios?${type}=${encodeURIComponent(message)}`);
+}
+
 export async function loginAction(_: unknown, formData: FormData) {
   const parsed = loginSchema.safeParse({
     username: requireField(formData, "username"),
@@ -81,36 +85,45 @@ export async function logoutAction() {
 
 export async function createUserAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
-  const parsed = userSchema.parse({
+  const parsed = userSchema.safeParse({
     name: requireField(formData, "name"),
     username: requireField(formData, "username").toLowerCase(),
     password: requireField(formData, "password"),
     role: requireField(formData, "role")
   });
-  const passwordHash = await bcrypt.hash(parsed.password, 12);
-  const [created] = await requireDb().insert(users).values({ ...parsed, passwordHash, createdBy: session.id }).returning();
+  if (!parsed.success) goToUsersWith("Preencha nome, usuario, cargo e uma senha com pelo menos 6 caracteres.");
+
+  const database = requireDb();
+  const existing = await database.query.users.findFirst({ where: eq(users.username, parsed.data.username) });
+  if (existing) goToUsersWith("Ja existe um usuario com esse login.");
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  const [created] = await database.insert(users).values({ ...parsed.data, passwordHash, createdBy: session.id }).returning();
   await audit("user", created.id, "create", session.id, created.role);
   revalidatePath("/usuarios");
+  goToUsersWith("Usuario criado com sucesso.", "ok");
 }
 
 export async function updateLoginSettingsAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
-  const parsed = loginSettingsSchema.parse({
+  const parsed = loginSettingsSchema.safeParse({
     loginEyebrow: requireField(formData, "loginEyebrow"),
     loginTitle: requireField(formData, "loginTitle"),
     loginSubtitle: requireField(formData, "loginSubtitle")
   });
+  if (!parsed.success) goToUsersWith("Preencha os textos da tela de login antes de salvar.");
+
   const image = formData.get("loginLogo");
   const loginLogoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "settings") : requireField(formData, "currentLogoUrl") || undefined;
   const database = requireDb();
   const existing = await database.query.appSettings.findFirst();
   const [saved] = existing
-    ? await database.update(appSettings).set({ ...parsed, loginLogoUrl, updatedAt: new Date() }).where(eq(appSettings.id, existing.id)).returning()
-    : await database.insert(appSettings).values({ ...parsed, loginLogoUrl, createdBy: session.id }).returning();
+    ? await database.update(appSettings).set({ ...parsed.data, loginLogoUrl, updatedAt: new Date() }).where(eq(appSettings.id, existing.id)).returning()
+    : await database.insert(appSettings).values({ ...parsed.data, loginLogoUrl, createdBy: session.id }).returning();
   await audit("app_settings", saved.id, existing ? "update" : "create", session.id);
   revalidatePath("/login");
   revalidatePath("/usuarios");
-  redirect("/usuarios?login=salvo");
+  goToUsersWith("Tela de login atualizada com sucesso.", "ok");
 }
 
 export async function createTaskAction(formData: FormData) {

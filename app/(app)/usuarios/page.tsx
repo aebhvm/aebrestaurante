@@ -9,11 +9,17 @@ import { NativeSelect } from "@/components/ui/select";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { getLoginSettings, getUsers } from "@/lib/data";
 
-export default async function UsersPage() {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<{ ok?: string; erro?: string }> }) {
+  const params = await searchParams;
   const [users, settings] = await Promise.all([getUsers(), getLoginSettings()]);
   return (
     <>
       <PageHeader title="Usuarios" description="Gestao de perfis, login e textos iniciais da tela de acesso." />
+      {params.ok || params.erro ? (
+        <div className={`mb-4 rounded-md border px-4 py-3 text-sm ${params.erro ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"}`}>
+          {params.erro ?? params.ok}
+        </div>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         <div className="space-y-4">
           <Card>
@@ -22,7 +28,7 @@ export default async function UsersPage() {
               <form action={createUserAction} className="space-y-3">
                 <Field label="Nome" name="name" />
                 <Field label="Usuario de login" name="username" />
-                <Field label="Senha" name="password" type="password" />
+                <Field label="Senha" name="password" type="password" minLength={6} placeholder="Minimo 6 caracteres" />
                 <div className="space-y-2">
                   <Label>Cargo</Label>
                   <NativeSelect name="role">
@@ -42,7 +48,7 @@ export default async function UsersPage() {
               {settings.loginLogoUrl ? <img src={settings.loginLogoUrl} alt="Logo atual" className="mb-3 h-14 w-auto rounded-md object-contain" /> : null}
               <form action={updateLoginSettingsAction} className="space-y-3">
                 <input type="hidden" name="currentLogoUrl" value={settings.loginLogoUrl ?? ""} />
-                <Field label="Logo" name="loginLogo" type="file" />
+                <Field label="Logo" name="loginLogo" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
                 <Field label="Texto pequeno" name="loginEyebrow" defaultValue={settings.loginEyebrow} />
                 <Field label="Titulo inicial" name="loginTitle" defaultValue={settings.loginTitle} />
                 <Field label="Subtitulo inicial" name="loginSubtitle" defaultValue={settings.loginSubtitle} />
@@ -73,6 +79,27 @@ export default async function UsersPage() {
   );
 }
 
-function Field({ label, name, type = "text", defaultValue }: { label: string; name: string; type?: string; defaultValue?: string }) {
-  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} defaultValue={defaultValue} required={type !== "file"} /></div>;
+function Field({
+  label,
+  name,
+  type = "text",
+  defaultValue,
+  minLength,
+  placeholder,
+  accept
+}: {
+  label: string;
+  name: string;
+  type?: string;
+  defaultValue?: string;
+  minLength?: number;
+  placeholder?: string;
+  accept?: string;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Input name={name} type={type} defaultValue={defaultValue} required={type !== "file"} minLength={minLength} placeholder={placeholder} accept={accept} />
+    </div>
+  );
 }
