@@ -18,21 +18,21 @@ export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, null);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "gestor@bar.local", password: "Senha@123" }
+    defaultValues: { username: "gestor", password: "Senha@123" }
   });
 
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-        <CardTitle className="text-xl">Entrar no BarOps</CardTitle>
-        <CardDescription>Operacoes, equipe e estoque em um unico painel.</CardDescription>
+        <CardTitle className="text-xl">Entrar no sistema</CardTitle>
+        <CardDescription>Use seu usuario cadastrado e senha.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...form.register("email")} />
-            {form.formState.errors.email && <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>}
+            <Label htmlFor="username">Usuario</Label>
+            <Input id="username" type="text" autoComplete="username" {...form.register("username")} />
+            {form.formState.errors.username && <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>

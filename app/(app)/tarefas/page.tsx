@@ -11,16 +11,18 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { getTasks, getUsers } from "@/lib/data";
 import { getSession } from "@/lib/session";
+import { todayISO } from "@/lib/utils";
 
 export default async function TasksPage({ searchParams }: { searchParams: Promise<{ date?: string; status?: string }> }) {
   const session = (await getSession())!;
   const params = await searchParams;
-  const [tasks, users] = await Promise.all([getTasks(session, params), getUsers()]);
+  const date = params.date ?? todayISO();
+  const [tasks, users] = await Promise.all([getTasks(session, { ...params, date }), getUsers()]);
 
   return (
     <>
       <PageHeader title="Tarefas" description="Criacao, acompanhamento e conclusao de atividades operacionais." />
-      <DateStatusFilters statusOptions={[{ value: "pendente", label: "Pendente" }, { value: "concluido", label: "Concluido" }]} />
+      <DateStatusFilters defaultDate={date} statusOptions={[{ value: "pendente", label: "Pendente" }, { value: "concluido", label: "Concluido" }]} />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {session.role === "gestor" && (
           <Card>
@@ -30,7 +32,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                 <Field label="Titulo" name="title" />
                 <div className="space-y-2"><Label>Descricao</Label><Textarea name="description" required /></div>
                 <div className="space-y-2"><Label>Responsavel</Label><NativeSelect name="responsibleId">{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</NativeSelect></div>
-                <Field label="Data" name="taskDate" type="date" />
+                <Field label="Data" name="taskDate" type="date" defaultValue={date} />
                 <Field label="Horario" name="taskTime" type="time" />
                 <div className="space-y-2"><Label>Prioridade</Label><NativeSelect name="priority"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="baixa">Baixa</option></NativeSelect></div>
                 <input type="hidden" name="status" value="pendente" />
@@ -62,6 +64,6 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   );
 }
 
-function Field({ label, name, type = "text" }: { label: string; name: string; type?: string }) {
-  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} required /></div>;
+function Field({ label, name, type = "text", defaultValue }: { label: string; name: string; type?: string; defaultValue?: string }) {
+  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} defaultValue={defaultValue} required /></div>;
 }

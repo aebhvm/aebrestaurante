@@ -1,13 +1,13 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(2),
   password: z.string().min(6)
 });
 
 export const userSchema = z.object({
   name: z.string().min(2),
-  email: z.string().email(),
+  username: z.string().min(2).max(80),
   password: z.string().min(8),
   role: z.enum(["gestor", "garcom", "barman", "estoquista"])
 });
@@ -24,10 +24,22 @@ export const taskSchema = z.object({
 });
 
 export const stockRequestSchema = z.object({
-  product: z.string().min(2),
-  quantity: z.coerce.number().int().positive(),
+  productId: z.coerce.number().int().positive(),
+  quantity: z.coerce.number().int().positive()
+});
+
+export const stockProductSchema = z.object({
+  name: z.string().min(2),
   unit: z.string().min(1),
-  reason: z.string().min(3)
+  active: z.coerce.boolean().default(true)
+});
+
+export const stationSchema = z.object({
+  id: z.coerce.number().int().positive().optional(),
+  name: z.string().min(2),
+  description: z.string().optional(),
+  responsibleId: z.coerce.number().int().positive(),
+  stationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 });
 
 export const stockStatusSchema = z.object({
@@ -41,8 +53,13 @@ export const recipeSchema = z.object({
   preparation: z.string().min(5),
   glass: z.string().min(2),
   garnish: z.string().optional(),
-  prepTimeMinutes: z.coerce.number().int().positive(),
   notes: z.string().optional()
+});
+
+export const loginSettingsSchema = z.object({
+  loginEyebrow: z.string().min(2),
+  loginTitle: z.string().min(2),
+  loginSubtitle: z.string().min(2)
 });
 
 export const newsSchema = z.object({

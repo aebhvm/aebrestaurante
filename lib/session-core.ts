@@ -3,7 +3,7 @@ import type { UserRole } from "@/db/schema";
 export type SessionUser = {
   id: number;
   name: string;
-  email: string;
+  username: string;
   role: UserRole;
 };
 
@@ -51,5 +51,5 @@ export async function verifySessionToken(token?: string): Promise<SessionUser | 
   const decoded = JSON.parse(new TextDecoder().decode(fromBase64Url(payload))) as SessionUser & { exp: number };
   if (decoded.exp < Date.now()) return null;
 
-  return { id: decoded.id, name: decoded.name, email: decoded.email, role: decoded.role };
+  return { id: decoded.id, name: decoded.name, username: decoded.username, role: decoded.role };
 }

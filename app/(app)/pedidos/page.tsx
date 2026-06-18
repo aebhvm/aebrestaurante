@@ -6,19 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { getStockRequests } from "@/lib/data";
+import { NativeSelect } from "@/components/ui/select";
+import { getStockProducts, getStockRequests } from "@/lib/data";
 import { getSession } from "@/lib/session";
+import { todayISO } from "@/lib/utils";
 
 export default async function StockRequestsPage({ searchParams }: { searchParams: Promise<{ date?: string; status?: string }> }) {
   const session = (await getSession())!;
-  const requests = await getStockRequests(session, await searchParams);
+  const params = await searchParams;
+  const filters = { ...params, date: params.date ?? todayISO() };
+  const [requests, products] = await Promise.all([getStockRequests(session, filters), getStockProducts(true)]);
   const canRequest = session.role === "gestor" || session.role === "barman";
   const canUpdate = session.role === "gestor" || session.role === "estoquista";
 
   return (
     <>
-      <PageHeader title="Pedidos de estoque" description="Fluxo Barman ou Gestor para Estoquista e confirmacao de entrega." />
+      <PageHeader title="Pedidos de estoque" description="Pedidos sempre iniciam na data de hoje e usam apenas produtos cadastrados." />
       <DateStatusFilters statusOptions={[{ value: "solicitado", label: "Solicitado" }, { value: "separado", label: "Separado" }, { value: "entregue", label: "Entregue" }]} />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {canRequest && (
@@ -26,11 +29,16 @@ export default async function StockRequestsPage({ searchParams }: { searchParams
             <CardHeader><CardTitle>Novo pedido</CardTitle></CardHeader>
             <CardContent>
               <form action={createStockRequestAction} className="space-y-3">
-                <Field label="Produto" name="product" />
-                <Field label="Quantidade" name="quantity" type="number" />
-                <Field label="Unidade" name="unit" />
-                <div className="space-y-2"><Label>Motivo</Label><Textarea name="reason" required /></div>
-                <Button className="w-full">Solicitar</Button>
+                <div className="space-y-2">
+                  <Label>Produto</Label>
+                  <NativeSelect name="productId" disabled={!products.length}>
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>{product.name} ({product.unit})</option>
+                    ))}
+                  </NativeSelect>
+                </div>
+                <div className="space-y-2"><Label>Quantidade</Label><Input name="quantity" type="number" min="1" required /></div>
+                <Button className="w-full" disabled={!products.length}>Solicitar</Button>
               </form>
             </CardContent>
           </Card>
@@ -41,8 +49,4 @@ export default async function StockRequestsPage({ searchParams }: { searchParams
       </div>
     </>
   );
-}
-
-function Field({ label, name, type = "text" }: { label: string; name: string; type?: string }) {
-  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} required /></div>;
 }

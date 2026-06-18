@@ -1,32 +1,51 @@
 import bcrypt from "bcryptjs";
-import { requireDb } from "@/db";
-import { barRecipes, breaks, news, stations, stockRequests, tasks, users, shifts } from "@/db/schema";
+import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-http";
+import { appSettings, barRecipes, breaks, news, stations, stockProducts, stockRequests, tasks, users, shifts } from "@/db/schema";
 
 const today = new Date().toISOString().slice(0, 10);
 
 async function main() {
-  const db = requireDb();
+  if (!process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL is required");
+  }
+
+  const db = drizzle(neon(process.env.DATABASE_URL));
   const passwordHash = await bcrypt.hash("Senha@123", 12);
 
   const [gestor, garcom, barman, estoquista] = await db
     .insert(users)
     .values([
-      { name: "Marina Gestora", email: "gestor@bar.local", role: "gestor", passwordHash },
-      { name: "Lucas Garcom", email: "garcom@bar.local", role: "garcom", passwordHash },
-      { name: "Bia Barman", email: "barman@bar.local", role: "barman", passwordHash },
-      { name: "Rafael Estoque", email: "estoque@bar.local", role: "estoquista", passwordHash }
+      { name: "Marina Gestora", username: "gestor", role: "gestor", passwordHash },
+      { name: "Lucas Garcom", username: "lucas", role: "garcom", passwordHash },
+      { name: "Bia Barman", username: "bia", role: "barman", passwordHash },
+      { name: "Rafael Estoque", username: "estoque", role: "estoquista", passwordHash }
     ])
     .returning();
 
+  await db.insert(appSettings).values({
+    loginEyebrow: "AEB Restaurante",
+    loginTitle: "Operacao do restaurante em tempo real.",
+    loginSubtitle: "Acesse tarefas, pracas, escalas, descansos e pedidos de estoque com seguranca.",
+    createdBy: gestor.id
+  });
+
   const [deck] = await db
     .insert(stations)
-    .values({ name: "Deck principal", responsibleId: garcom.id, stationDate: today, notes: "Priorizar mesas 1 a 8", createdBy: gestor.id })
+    .values({
+      name: "Deck principal",
+      description: "Mesas 1 a 8",
+      responsibleId: garcom.id,
+      stationDate: today,
+      notes: "Priorizar mesas 1 a 8",
+      createdBy: gestor.id
+    })
     .returning();
 
   await db.insert(tasks).values([
     {
       title: "Conferir mise en place",
-      description: "Checar guardanapos, talheres e taças antes da abertura.",
+      description: "Checar guardanapos, talheres e tacas antes da abertura.",
       responsibleId: garcom.id,
       taskDate: today,
       taskTime: "16:00",
@@ -45,8 +64,8 @@ async function main() {
   ]);
 
   await db.insert(shifts).values([
-    { waiterId: garcom.id, shiftDate: today, startsAt: "16:00", endsAt: "00:00", stationId: deck.id, functionName: "Atendimento", createdBy: gestor.id },
-    { bartenderId: barman.id, shiftDate: today, startsAt: "16:00", endsAt: "00:00", stationId: deck.id, functionName: "Bar", createdBy: gestor.id }
+    { waiterId: garcom.id, shiftDate: today, startsAt: "00:00", endsAt: "00:00", stationId: deck.id, functionName: "Escala", createdBy: gestor.id },
+    { bartenderId: barman.id, shiftDate: today, startsAt: "00:00", endsAt: "00:00", stationId: deck.id, functionName: "Escala", createdBy: gestor.id }
   ]);
 
   await db.insert(breaks).values([
@@ -56,7 +75,7 @@ async function main() {
 
   await db.insert(barRecipes).values({
     drinkName: "Negroni da Casa",
-    category: "Clássicos",
+    category: "Classicos",
     ingredients: [
       { item: "Gin", amount: "30 ml" },
       { item: "Campari", amount: "30 ml" },
@@ -65,16 +84,21 @@ async function main() {
     preparation: "Mexer com gelo por 20 segundos e coar sobre gelo grande.",
     glass: "Old fashioned",
     garnish: "Casca de laranja",
-    prepTimeMinutes: 4,
     createdBy: gestor.id
   });
 
+  const [xarope] = await db.insert(stockProducts).values({ name: "Xarope de acucar", unit: "garrafa", createdBy: estoquista.id }).returning();
+  await db.insert(stockProducts).values([
+    { name: "Guardanapo premium", unit: "pacote", createdBy: estoquista.id },
+    { name: "Limao tahiti", unit: "kg", createdBy: estoquista.id }
+  ]);
+
   await db.insert(stockRequests).values({
     requesterId: barman.id,
-    product: "Xarope de acucar",
+    productId: xarope.id,
+    product: xarope.name,
     quantity: 2,
-    unit: "garrafa",
-    reason: "Reposicao para o turno da noite",
+    unit: xarope.unit,
     requestDate: today,
     requestTime: "18:20",
     createdBy: barman.id
@@ -90,7 +114,7 @@ async function main() {
     createdBy: gestor.id
   });
 
-  console.log("Seed concluido. Logins: gestor@bar.local, garcom@bar.local, barman@bar.local, estoque@bar.local / Senha@123");
+  console.log("Seed concluido. Usuarios: gestor, lucas, bia, estoque / Senha@123");
 }
 
 main().catch((error) => {

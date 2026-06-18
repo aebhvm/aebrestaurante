@@ -10,7 +10,7 @@ type RequestRow = {
   product: string;
   quantity: number;
   unit: string;
-  reason: string;
+  reason?: string | null;
   requestDate: string;
   requestTime: string;
   status: string;
@@ -37,7 +37,7 @@ export function StockTable({ requests, canUpdate = false }: { requests: RequestR
               <TR key={item.id}>
                 <TD>
                   <p className="font-medium">{item.product}</p>
-                  <p className="text-xs text-muted-foreground">{item.reason}</p>
+                  <p className="text-xs text-muted-foreground">Pedido #{item.id}</p>
                 </TD>
                 <TD>{item.requester?.name ?? "-"}</TD>
                 <TD>{item.quantity} {item.unit}</TD>

@@ -3,17 +3,28 @@ CREATE TYPE priority AS ENUM ('baixa', 'media', 'alta', 'critica');
 CREATE TYPE task_status AS ENUM ('pendente', 'concluido');
 CREATE TYPE stock_status AS ENUM ('solicitado', 'separado', 'entregue');
 CREATE TYPE news_audience AS ENUM ('todos', 'usuarios', 'garcons');
-CREATE TYPE audit_entity AS ENUM ('user', 'task', 'station', 'shift', 'break', 'recipe', 'stock_request', 'news');
+CREATE TYPE audit_entity AS ENUM ('user', 'task', 'station', 'shift', 'break', 'recipe', 'stock_product', 'stock_request', 'news', 'app_settings');
 
 CREATE TABLE users (
   id serial PRIMARY KEY,
   name varchar(140) NOT NULL,
-  email varchar(180) NOT NULL UNIQUE,
+  username varchar(80) NOT NULL UNIQUE,
   password_hash text NOT NULL,
   role role NOT NULL DEFAULT 'garcom',
   image_url text,
   active boolean NOT NULL DEFAULT true,
   last_access_at timestamptz,
+  created_by integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE app_settings (
+  id serial PRIMARY KEY,
+  login_logo_url text,
+  login_eyebrow varchar(120) NOT NULL DEFAULT 'AEB Restaurante',
+  login_title varchar(220) NOT NULL DEFAULT 'Gestao precisa para salao, bar e estoque.',
+  login_subtitle text NOT NULL DEFAULT 'Controle tarefas, escalas, pracas, fichas tecnicas, noticias e pedidos de estoque.',
   created_by integer REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -37,6 +48,7 @@ CREATE TABLE tasks (
 CREATE TABLE stations (
   id serial PRIMARY KEY,
   name varchar(120) NOT NULL,
+  description text,
   responsible_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   station_date date NOT NULL,
   notes text,
@@ -50,10 +62,10 @@ CREATE TABLE shifts (
   waiter_id integer REFERENCES users(id) ON DELETE CASCADE,
   bartender_id integer REFERENCES users(id) ON DELETE CASCADE,
   shift_date date NOT NULL,
-  starts_at varchar(8) NOT NULL,
-  ends_at varchar(8) NOT NULL,
+  starts_at varchar(8) NOT NULL DEFAULT '00:00',
+  ends_at varchar(8) NOT NULL DEFAULT '00:00',
   station_id integer REFERENCES stations(id) ON DELETE SET NULL,
-  function_name varchar(120) NOT NULL,
+  function_name varchar(120) NOT NULL DEFAULT 'Escala',
   created_by integer REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -82,8 +94,17 @@ CREATE TABLE bar_recipes (
   preparation text NOT NULL,
   glass varchar(120) NOT NULL,
   garnish varchar(160),
-  prep_time_minutes integer NOT NULL DEFAULT 5,
   notes text,
+  created_by integer REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE stock_products (
+  id serial PRIMARY KEY,
+  name varchar(160) NOT NULL UNIQUE,
+  unit varchar(40) NOT NULL,
+  active boolean NOT NULL DEFAULT true,
   created_by integer REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -92,10 +113,11 @@ CREATE TABLE bar_recipes (
 CREATE TABLE stock_requests (
   id serial PRIMARY KEY,
   requester_id integer NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  product_id integer NOT NULL REFERENCES stock_products(id) ON DELETE RESTRICT,
   product varchar(160) NOT NULL,
   quantity integer NOT NULL CHECK (quantity > 0),
   unit varchar(40) NOT NULL,
-  reason text NOT NULL,
+  reason text,
   request_date date NOT NULL,
   request_time varchar(8) NOT NULL,
   status stock_status NOT NULL DEFAULT 'solicitado',
@@ -153,6 +175,7 @@ CREATE INDEX breaks_bartender_date_idx ON breaks(bartender_id, break_date);
 CREATE INDEX breaks_date_idx ON breaks(break_date);
 CREATE INDEX bar_recipes_name_idx ON bar_recipes(drink_name);
 CREATE INDEX bar_recipes_category_idx ON bar_recipes(category);
+CREATE INDEX stock_products_active_idx ON stock_products(active);
 CREATE INDEX stock_requests_requester_date_idx ON stock_requests(requester_id, request_date);
 CREATE INDEX stock_requests_status_idx ON stock_requests(status);
 CREATE INDEX stock_requests_date_idx ON stock_requests(request_date);

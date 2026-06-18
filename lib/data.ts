@@ -2,17 +2,19 @@ import { and, count, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   auditLogs,
+  appSettings,
   barRecipes,
   breaks,
   news,
   newsRecipients,
   shifts,
   stations,
+  stockProducts,
   stockRequests,
   tasks,
   users
 } from "@/db/schema";
-import { demoBreaks, demoNews, demoRecipes, demoShifts, demoStations, demoStockRequests, demoTasks, demoUsers } from "@/lib/demo-data";
+import { demoBreaks, demoLoginSettings, demoNews, demoRecipes, demoShifts, demoStations, demoStockProducts, demoStockRequests, demoTasks, demoUsers } from "@/lib/demo-data";
 import type { SessionUser } from "@/lib/session";
 import { todayISO } from "@/lib/utils";
 
@@ -23,42 +25,41 @@ export async function getUsers() {
   return db.query.users.findMany({ orderBy: [desc(users.createdAt)] });
 }
 
+export async function getLoginSettings() {
+  if (!db) return demoLoginSettings;
+  return (await db.query.appSettings.findFirst({ orderBy: [desc(appSettings.updatedAt)] })) ?? demoLoginSettings;
+}
+
 export async function getManagerDashboard(date = todayISO()) {
   if (!db) {
+    const dayTasks = demoTasks.filter((task) => task.taskDate === date);
     return {
-      totalWaiters: demoUsers.filter((user) => user.role === "garcom").length,
-      pendingTasks: demoTasks.filter((task) => task.status === "pendente" && task.taskDate === date).length,
+      pendingTasks: dayTasks.filter((task) => task.status === "pendente").length,
+      completedTasks: dayTasks.filter((task) => task.status === "concluido").length,
+      overdueTasks: dayTasks.filter((task) => task.status === "pendente" && task.taskTime < new Date().toTimeString().slice(0, 5)).length,
       pendingOrders: demoStockRequests.filter((order) => order.status === "solicitado" && order.requestDate === date).length,
-      activeNews: demoNews.length,
-      todaysShifts: demoShifts.filter((shift) => shift.shiftDate === date).length,
-      hourBreaks: demoBreaks.filter((item) => item.breakDate === date).length,
-      charts: buildDemoCharts()
+      todaysShifts: demoShifts.filter((shift) => shift.shiftDate === date),
+      todaysBreaks: demoBreaks.filter((item) => item.breakDate === date)
     };
   }
 
-  const [waiters, pendingTasks, pendingOrders, activeNews, todaysShifts, hourBreaks, completedTasks, orders] = await Promise.all([
-    db.select({ value: count() }).from(users).where(eq(users.role, "garcom")),
+  const now = new Date().toTimeString().slice(0, 5);
+  const [pendingTasks, completedTasks, overdueTasks, pendingOrders, todaysShifts, todaysBreaks] = await Promise.all([
     db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "pendente"), eq(tasks.taskDate, date))),
+    db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "concluido"), eq(tasks.taskDate, date))),
+    db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "pendente"), eq(tasks.taskDate, date), sql`${tasks.taskTime} < ${now}`)),
     db.select({ value: count() }).from(stockRequests).where(and(eq(stockRequests.status, "solicitado"), eq(stockRequests.requestDate, date))),
-    db.select({ value: count() }).from(news).where(and(lte(news.publishedAt, date), gte(news.expiresAt, date))),
-    db.select({ value: count() }).from(shifts).where(eq(shifts.shiftDate, date)),
-    db.select({ value: count() }).from(breaks).where(and(eq(breaks.breakDate, date), sql`(${breaks.endsAt}::time - ${breaks.startsAt}::time) = interval '1 hour'`)),
-    db.select({ day: tasks.taskDate, value: count() }).from(tasks).where(eq(tasks.status, "concluido")).groupBy(tasks.taskDate).orderBy(tasks.taskDate).limit(7),
-    db.select({ day: stockRequests.requestDate, value: count() }).from(stockRequests).groupBy(stockRequests.requestDate).orderBy(stockRequests.requestDate).limit(7)
+    db.query.shifts.findMany({ where: eq(shifts.shiftDate, date), with: { waiter: true, bartender: true, station: true }, orderBy: [shifts.shiftDate] }),
+    db.query.breaks.findMany({ where: eq(breaks.breakDate, date), with: { waiter: true, bartender: true }, orderBy: [breaks.startsAt] })
   ]);
 
   return {
-    totalWaiters: waiters[0]?.value ?? 0,
     pendingTasks: pendingTasks[0]?.value ?? 0,
+    completedTasks: completedTasks[0]?.value ?? 0,
+    overdueTasks: overdueTasks[0]?.value ?? 0,
     pendingOrders: pendingOrders[0]?.value ?? 0,
-    activeNews: activeNews[0]?.value ?? 0,
-    todaysShifts: todaysShifts[0]?.value ?? 0,
-    hourBreaks: hourBreaks[0]?.value ?? 0,
-    charts: {
-      completedTasks,
-      orders,
-      productivity: completedTasks.map((item, index) => ({ day: item.day, value: Number(item.value) + index + 2 }))
-    }
+    todaysShifts,
+    todaysBreaks
   };
 }
 
@@ -128,7 +129,15 @@ export async function getStockRequests(session: SessionUser, filters: Filters = 
     filters.date ? eq(stockRequests.requestDate, filters.date) : undefined,
     filters.status ? eq(stockRequests.status, filters.status as "solicitado" | "separado" | "entregue") : undefined
   ].filter(Boolean);
-  return db.query.stockRequests.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { requester: true }, orderBy: [desc(stockRequests.createdAt)] });
+  return db.query.stockRequests.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { requester: true, productRecord: true }, orderBy: [desc(stockRequests.createdAt)] });
+}
+
+export async function getStockProducts(activeOnly = false) {
+  if (!db) return activeOnly ? demoStockProducts.filter((item) => item.active) : demoStockProducts;
+  return db.query.stockProducts.findMany({
+    where: activeOnly ? eq(stockProducts.active, true) : undefined,
+    orderBy: [stockProducts.name]
+  });
 }
 
 export async function getNewsForUser(session: SessionUser, date = todayISO()) {
@@ -157,25 +166,4 @@ export async function getAuditLogs(filters: Filters = {}) {
     filters.date ? sql`date(${auditLogs.occurredAt}) = ${filters.date}` : undefined
   ].filter(Boolean);
   return db.query.auditLogs.findMany({ where: conditions.length ? and(...conditions) : undefined, orderBy: [desc(auditLogs.occurredAt)], limit: 100 });
-}
-
-function buildDemoCharts() {
-  const today = todayISO();
-  return {
-    completedTasks: [
-      { day: today, value: 4 },
-      { day: "2026-06-12", value: 7 },
-      { day: "2026-06-11", value: 5 }
-    ],
-    orders: [
-      { day: today, value: 6 },
-      { day: "2026-06-12", value: 3 },
-      { day: "2026-06-11", value: 4 }
-    ],
-    productivity: [
-      { day: today, value: 86 },
-      { day: "2026-06-12", value: 78 },
-      { day: "2026-06-11", value: 81 }
-    ]
-  };
 }

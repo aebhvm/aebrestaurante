@@ -27,8 +27,10 @@ export const auditEntityEnum = pgEnum("audit_entity", [
   "shift",
   "break",
   "recipe",
+  "stock_product",
   "stock_request",
-  "news"
+  "news",
+  "app_settings"
 ]);
 
 const lifecycle = {
@@ -41,7 +43,7 @@ export const users = pgTable(
   {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 140 }).notNull(),
-    email: varchar("email", { length: 180 }).notNull(),
+    username: varchar("username", { length: 80 }).notNull(),
     passwordHash: text("password_hash").notNull(),
     role: roleEnum("role").notNull().default("garcom"),
     imageUrl: text("image_url"),
@@ -51,7 +53,7 @@ export const users = pgTable(
     ...lifecycle
   },
   (table) => ({
-    emailIdx: uniqueIndex("users_email_idx").on(table.email),
+    usernameIdx: uniqueIndex("users_username_idx").on(table.username),
     roleIdx: index("users_role_idx").on(table.role)
   })
 );
@@ -83,6 +85,7 @@ export const stations = pgTable(
   {
     id: serial("id").primaryKey(),
     name: varchar("name", { length: 120 }).notNull(),
+    description: text("description"),
     responsibleId: integer("responsible_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     stationDate: date("station_date").notNull(),
     notes: text("notes"),
@@ -102,10 +105,10 @@ export const shifts = pgTable(
     waiterId: integer("waiter_id").references(() => users.id, { onDelete: "cascade" }),
     bartenderId: integer("bartender_id").references(() => users.id, { onDelete: "cascade" }),
     shiftDate: date("shift_date").notNull(),
-    startsAt: varchar("starts_at", { length: 8 }).notNull(),
-    endsAt: varchar("ends_at", { length: 8 }).notNull(),
+    startsAt: varchar("starts_at", { length: 8 }).notNull().default("00:00"),
+    endsAt: varchar("ends_at", { length: 8 }).notNull().default("00:00"),
     stationId: integer("station_id").references(() => stations.id, { onDelete: "set null" }),
-    functionName: varchar("function_name", { length: 120 }).notNull(),
+    functionName: varchar("function_name", { length: 120 }).notNull().default("Escala"),
     createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
     ...lifecycle
   },
@@ -146,7 +149,6 @@ export const barRecipes = pgTable(
     preparation: text("preparation").notNull(),
     glass: varchar("glass", { length: 120 }).notNull(),
     garnish: varchar("garnish", { length: 160 }),
-    prepTimeMinutes: integer("prep_time_minutes").notNull().default(5),
     notes: text("notes"),
     createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
     ...lifecycle
@@ -157,15 +159,32 @@ export const barRecipes = pgTable(
   })
 );
 
+export const stockProducts = pgTable(
+  "stock_products",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 160 }).notNull(),
+    unit: varchar("unit", { length: 40 }).notNull(),
+    active: boolean("active").notNull().default(true),
+    createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...lifecycle
+  },
+  (table) => ({
+    nameIdx: uniqueIndex("stock_products_name_idx").on(table.name),
+    activeIdx: index("stock_products_active_idx").on(table.active)
+  })
+);
+
 export const stockRequests = pgTable(
   "stock_requests",
   {
     id: serial("id").primaryKey(),
     requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    productId: integer("product_id").notNull().references(() => stockProducts.id, { onDelete: "restrict" }),
     product: varchar("product", { length: 160 }).notNull(),
     quantity: integer("quantity").notNull(),
     unit: varchar("unit", { length: 40 }).notNull(),
-    reason: text("reason").notNull(),
+    reason: text("reason"),
     requestDate: date("request_date").notNull(),
     requestTime: varchar("request_time", { length: 8 }).notNull(),
     status: stockStatusEnum("status").notNull().default("solicitado"),
@@ -181,6 +200,16 @@ export const stockRequests = pgTable(
     dateIdx: index("stock_requests_date_idx").on(table.requestDate)
   })
 );
+
+export const appSettings = pgTable("app_settings", {
+  id: serial("id").primaryKey(),
+  loginLogoUrl: text("login_logo_url"),
+  loginEyebrow: varchar("login_eyebrow", { length: 120 }).notNull().default("AEB Restaurante"),
+  loginTitle: varchar("login_title", { length: 220 }).notNull().default("Gestao precisa para salao, bar e estoque."),
+  loginSubtitle: text("login_subtitle").notNull().default("Controle tarefas, escalas, pracas, fichas tecnicas, noticias e pedidos de estoque."),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  ...lifecycle
+});
 
 export const news = pgTable(
   "news",
@@ -256,7 +285,8 @@ export const breakRelations = relations(breaks, ({ one }) => ({
 }));
 
 export const stockRequestRelations = relations(stockRequests, ({ one }) => ({
-  requester: one(users, { fields: [stockRequests.requesterId], references: [users.id] })
+  requester: one(users, { fields: [stockRequests.requesterId], references: [users.id] }),
+  productRecord: one(stockProducts, { fields: [stockRequests.productId], references: [stockProducts.id] })
 }));
 
 export const newsRelations = relations(news, ({ many, one }) => ({

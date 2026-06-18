@@ -6,15 +6,35 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, requireDb } from "@/db";
-import { auditLogs, barRecipes, news, stockRequests, tasks, users } from "@/db/schema";
+import { appSettings, auditLogs, barRecipes, news, stations, stockProducts, stockRequests, tasks, users } from "@/db/schema";
 import { clearSession, getSession, setSession } from "@/lib/session";
 import { dashboardForRole } from "@/lib/permissions";
-import { loginSchema, newsSchema, recipeSchema, stockRequestSchema, stockStatusSchema, taskSchema, userSchema } from "@/lib/validators";
+import {
+  loginSchema,
+  loginSettingsSchema,
+  newsSchema,
+  recipeSchema,
+  stationSchema,
+  stockProductSchema,
+  stockRequestSchema,
+  stockStatusSchema,
+  taskSchema,
+  userSchema
+} from "@/lib/validators";
 import { todayISO } from "@/lib/utils";
 import { demoUsers } from "@/lib/demo-data";
 
 function requireField(formData: FormData, field: string) {
   return String(formData.get(field) ?? "");
+}
+
+async function uploadPublicFile(file: File, folder: string) {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    return (await put(`${folder}/${Date.now()}-${file.name}`, file, { access: "public" })).url;
+  }
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  return `data:${file.type || "application/octet-stream"};base64,${bytes.toString("base64")}`;
 }
 
 async function requireUser(roles?: string[]) {
@@ -24,33 +44,33 @@ async function requireUser(roles?: string[]) {
   return session;
 }
 
-async function audit(entity: "user" | "task" | "recipe" | "stock_request" | "news", entityId: number, action: string, actorId: number, status?: string) {
+async function audit(entity: "user" | "task" | "station" | "recipe" | "stock_product" | "stock_request" | "news" | "app_settings", entityId: number, action: string, actorId: number, status?: string) {
   await requireDb().insert(auditLogs).values({ entity, entityId, action, actorId, status });
 }
 
 export async function loginAction(_: unknown, formData: FormData) {
   const parsed = loginSchema.safeParse({
-    email: requireField(formData, "email"),
+    username: requireField(formData, "username"),
     password: requireField(formData, "password")
   });
-  if (!parsed.success) return { error: "Informe email e senha validos." };
+  if (!parsed.success) return { error: "Informe usuario e senha validos." };
 
   if (!db && parsed.data.password === "Senha@123") {
-    const demo = demoUsers.find((item) => item.email === parsed.data.email.toLowerCase());
+    const demo = demoUsers.find((item) => item.username === parsed.data.username.toLowerCase());
     if (demo) {
-      await setSession({ id: demo.id, name: demo.name, email: demo.email, role: demo.role });
+      await setSession({ id: demo.id, name: demo.name, username: demo.username, role: demo.role });
       redirect(dashboardForRole(demo.role));
     }
   }
 
   const database = requireDb();
-  const [user] = await database.select().from(users).where(eq(users.email, parsed.data.email.toLowerCase())).limit(1);
+  const [user] = await database.select().from(users).where(eq(users.username, parsed.data.username.toLowerCase())).limit(1);
   if (!user || !user.active || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
     return { error: "Credenciais invalidas." };
   }
 
   await database.update(users).set({ lastAccessAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
-  await setSession({ id: user.id, name: user.name, email: user.email, role: user.role });
+  await setSession({ id: user.id, name: user.name, username: user.username, role: user.role });
   redirect(dashboardForRole(user.role));
 }
 
@@ -63,7 +83,7 @@ export async function createUserAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
   const parsed = userSchema.parse({
     name: requireField(formData, "name"),
-    email: requireField(formData, "email").toLowerCase(),
+    username: requireField(formData, "username").toLowerCase(),
     password: requireField(formData, "password"),
     role: requireField(formData, "role")
   });
@@ -71,6 +91,26 @@ export async function createUserAction(formData: FormData) {
   const [created] = await requireDb().insert(users).values({ ...parsed, passwordHash, createdBy: session.id }).returning();
   await audit("user", created.id, "create", session.id, created.role);
   revalidatePath("/usuarios");
+}
+
+export async function updateLoginSettingsAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const parsed = loginSettingsSchema.parse({
+    loginEyebrow: requireField(formData, "loginEyebrow"),
+    loginTitle: requireField(formData, "loginTitle"),
+    loginSubtitle: requireField(formData, "loginSubtitle")
+  });
+  const image = formData.get("loginLogo");
+  const loginLogoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "settings") : requireField(formData, "currentLogoUrl") || undefined;
+  const database = requireDb();
+  const existing = await database.query.appSettings.findFirst();
+  const [saved] = existing
+    ? await database.update(appSettings).set({ ...parsed, loginLogoUrl, updatedAt: new Date() }).where(eq(appSettings.id, existing.id)).returning()
+    : await database.insert(appSettings).values({ ...parsed, loginLogoUrl, createdBy: session.id }).returning();
+  await audit("app_settings", saved.id, existing ? "update" : "create", session.id);
+  revalidatePath("/login");
+  revalidatePath("/usuarios");
+  redirect("/usuarios?login=salvo");
 }
 
 export async function createTaskAction(formData: FormData) {
@@ -93,16 +133,18 @@ export async function createTaskAction(formData: FormData) {
 export async function createStockRequestAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const parsed = stockRequestSchema.parse({
-    product: requireField(formData, "product"),
-    quantity: requireField(formData, "quantity"),
-    unit: requireField(formData, "unit"),
-    reason: requireField(formData, "reason")
+    productId: requireField(formData, "productId"),
+    quantity: requireField(formData, "quantity")
   });
+  const product = await requireDb().query.stockProducts.findFirst({ where: eq(stockProducts.id, parsed.productId) });
+  if (!product || !product.active) throw new Error("Produto invalido ou inativo.");
   const now = new Date();
   const [created] = await requireDb()
     .insert(stockRequests)
     .values({
       ...parsed,
+      product: product.name,
+      unit: product.unit,
       requesterId: session.id,
       requestDate: todayISO(),
       requestTime: now.toTimeString().slice(0, 5),
@@ -110,6 +152,19 @@ export async function createStockRequestAction(formData: FormData) {
     })
     .returning();
   await audit("stock_request", created.id, "create", session.id, created.status);
+  revalidatePath("/pedidos");
+}
+
+export async function createStockProductAction(formData: FormData) {
+  const session = await requireUser(["gestor", "estoquista"]);
+  const parsed = stockProductSchema.parse({
+    name: requireField(formData, "name"),
+    unit: requireField(formData, "unit"),
+    active: formData.get("active") !== "false"
+  });
+  const [created] = await requireDb().insert(stockProducts).values({ ...parsed, createdBy: session.id }).returning();
+  await audit("stock_product", created.id, "create", session.id, created.unit);
+  revalidatePath("/estoque");
   revalidatePath("/pedidos");
 }
 
@@ -139,11 +194,10 @@ export async function createRecipeAction(formData: FormData) {
     preparation: requireField(formData, "preparation"),
     glass: requireField(formData, "glass"),
     garnish: requireField(formData, "garnish"),
-    prepTimeMinutes: requireField(formData, "prepTimeMinutes"),
     notes: requireField(formData, "notes")
   });
   const image = formData.get("photo");
-  const photoUrl = image instanceof File && image.size > 0 ? (await put(`recipes/${Date.now()}-${image.name}`, image, { access: "public" })).url : undefined;
+  const photoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "recipes") : undefined;
   const ingredients = requireField(formData, "ingredients")
     .split("\n")
     .map((line) => line.trim())
@@ -157,6 +211,37 @@ export async function createRecipeAction(formData: FormData) {
   revalidatePath("/fichas");
 }
 
+export async function upsertStationAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const parsed = stationSchema.parse({
+    id: requireField(formData, "id") || undefined,
+    name: requireField(formData, "name"),
+    description: requireField(formData, "description"),
+    responsibleId: requireField(formData, "responsibleId"),
+    stationDate: requireField(formData, "stationDate") || todayISO()
+  });
+  const database = requireDb();
+  const [saved] = parsed.id
+    ? await database
+        .update(stations)
+        .set({ name: parsed.name, description: parsed.description, responsibleId: parsed.responsibleId, stationDate: parsed.stationDate, updatedAt: new Date() })
+        .where(eq(stations.id, parsed.id))
+        .returning()
+    : await database.insert(stations).values({ ...parsed, createdBy: session.id }).returning();
+  await audit("station", saved.id, parsed.id ? "update" : "create", session.id);
+  revalidatePath("/pracas");
+  revalidatePath("/gestor");
+}
+
+export async function deleteStationAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  await requireDb().delete(stations).where(eq(stations.id, id));
+  await audit("station", id, "delete", session.id);
+  revalidatePath("/pracas");
+  revalidatePath("/gestor");
+}
+
 export async function createNewsAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
   const parsed = newsSchema.parse({
@@ -168,7 +253,7 @@ export async function createNewsAction(formData: FormData) {
     audience: requireField(formData, "audience")
   });
   const pdf = formData.get("pdf");
-  const pdfUrl = pdf instanceof File && pdf.size > 0 ? (await put(`news/${Date.now()}-${pdf.name}`, pdf, { access: "public" })).url : undefined;
+  const pdfUrl = pdf instanceof File && pdf.size > 0 ? await uploadPublicFile(pdf, "news") : undefined;
   const [created] = await requireDb().insert(news).values({ ...parsed, pdfUrl, createdBy: session.id }).returning();
   await audit("news", created.id, "create", session.id, created.priority);
   revalidatePath("/noticias");

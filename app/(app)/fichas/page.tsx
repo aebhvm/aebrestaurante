@@ -35,7 +35,6 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
                 <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" required /></div>
                 <Field label="Copo utilizado" name="glass" />
                 <Field label="Guarnicao" name="garnish" />
-                <Field label="Tempo de preparo" name="prepTimeMinutes" type="number" />
                 <div className="space-y-2"><Label>Observacoes</Label><Textarea name="notes" /></div>
                 <Button className="w-full">Salvar ficha</Button>
               </form>
@@ -62,7 +61,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
                   </ul>
                 </div>
                 <div><p className="font-medium">Passo a passo</p><p className="text-muted-foreground">{recipe.preparation}</p></div>
-                <p className="text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnicao"} | {recipe.prepTimeMinutes} min</p>
+                <p className="text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnicao"}</p>
               </CardContent>
             </Card>
           ))}
