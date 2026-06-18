@@ -58,7 +58,7 @@ export async function loginAction(_: unknown, formData: FormData) {
     username: requireField(formData, "username"),
     password: requireField(formData, "password")
   });
-  if (!parsed.success) return { error: "Informe usuario e senha validos." };
+  if (!parsed.success) return { error: "Informe usuário e senha válidos." };
 
   if (!db && parsed.data.password === "Senha@123") {
     const demo = demoUsers.find((item) => item.username === parsed.data.username.toLowerCase());
@@ -71,7 +71,7 @@ export async function loginAction(_: unknown, formData: FormData) {
   const database = requireDb();
   const [user] = await database.select().from(users).where(eq(users.username, parsed.data.username.toLowerCase())).limit(1);
   if (!user || !user.active || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
-    return { error: "Credenciais invalidas." };
+    return { error: "Credenciais inválidas." };
   }
 
   await database.update(users).set({ lastAccessAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
@@ -92,17 +92,17 @@ export async function createUserAction(formData: FormData) {
     password: requireField(formData, "password"),
     role: requireField(formData, "role")
   });
-  if (!parsed.success) goToUsersWith("Preencha nome, usuario, cargo e uma senha com pelo menos 4 caracteres.");
+  if (!parsed.success) goToUsersWith("Preencha nome, usuário, cargo e uma senha com pelo menos 4 caracteres.");
 
   const database = requireDb();
   const existing = await database.query.users.findFirst({ where: eq(users.username, parsed.data.username) });
-  if (existing) goToUsersWith("Ja existe um usuario com esse login.");
+  if (existing) goToUsersWith("Já existe um usuário com esse login.");
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
   const [created] = await database.insert(users).values({ ...parsed.data, passwordHash, createdBy: session.id }).returning();
   await audit("user", created.id, "create", session.id, created.role);
   revalidatePath("/usuarios");
-  goToUsersWith("Usuario criado com sucesso.", "ok");
+  goToUsersWith("Usuário criado com sucesso.", "ok");
 }
 
 export async function updateUserAction(formData: FormData) {
@@ -115,18 +115,18 @@ export async function updateUserAction(formData: FormData) {
     role: requireField(formData, "role"),
     active: requireField(formData, "active")
   });
-  if (!parsed.success) goToUsersWith("Revise os dados do usuario. A senha nova deve ter pelo menos 4 caracteres.");
+  if (!parsed.success) goToUsersWith("Revise os dados do usuário. A senha nova deve ter pelo menos 4 caracteres.");
 
   if (parsed.data.id === session.id && (parsed.data.role !== "gestor" || !parsed.data.active)) {
-    goToUsersWith("Voce nao pode remover seu proprio acesso de gestor.");
+    goToUsersWith("Você não pode remover seu próprio acesso de gestor.");
   }
 
   const database = requireDb();
   const existing = await database.query.users.findFirst({ where: eq(users.id, parsed.data.id) });
-  if (!existing) goToUsersWith("Usuario nao encontrado.");
+  if (!existing) goToUsersWith("Usuário não encontrado.");
 
   const duplicate = await database.query.users.findFirst({ where: eq(users.username, parsed.data.username) });
-  if (duplicate && duplicate.id !== parsed.data.id) goToUsersWith("Ja existe outro usuario com esse login.");
+  if (duplicate && duplicate.id !== parsed.data.id) goToUsersWith("Já existe outro usuário com esse login.");
 
   const patch = parsed.data.password
     ? {
@@ -148,23 +148,23 @@ export async function updateUserAction(formData: FormData) {
   await database.update(users).set(patch).where(eq(users.id, parsed.data.id));
   await audit("user", parsed.data.id, "update", session.id, parsed.data.role);
   revalidatePath("/usuarios");
-  goToUsersWith("Usuario atualizado com sucesso.", "ok");
+  goToUsersWith("Usuário atualizado com sucesso.", "ok");
 }
 
 export async function deleteUserAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
   const id = Number(requireField(formData, "id"));
-  if (!Number.isInteger(id) || id <= 0) goToUsersWith("Usuario invalido.");
-  if (id === session.id) goToUsersWith("Voce nao pode excluir o proprio usuario logado.");
+  if (!Number.isInteger(id) || id <= 0) goToUsersWith("Usuário inválido.");
+  if (id === session.id) goToUsersWith("Você não pode excluir o próprio usuário logado.");
 
   const database = requireDb();
   const existing = await database.query.users.findFirst({ where: eq(users.id, id) });
-  if (!existing) goToUsersWith("Usuario nao encontrado.");
+  if (!existing) goToUsersWith("Usuário não encontrado.");
 
   await audit("user", id, "delete", session.id, existing.role);
   await database.delete(users).where(eq(users.id, id));
   revalidatePath("/usuarios");
-  goToUsersWith("Usuario excluido com sucesso.", "ok");
+  goToUsersWith("Usuário excluído com sucesso.", "ok");
 }
 
 export async function updateLoginSettingsAction(formData: FormData) {

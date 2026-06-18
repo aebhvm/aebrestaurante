@@ -21,7 +21,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHeader title="Tarefas" description="Criacao, acompanhamento e conclusao de atividades operacionais." />
+      <PageHeader title="Tarefas" description="Criação, acompanhamento e conclusão de atividades operacionais." />
       <DateStatusFilters defaultDate={date} statusOptions={[{ value: "pendente", label: "Pendente" }, { value: "concluido", label: "Concluido" }]} />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {session.role === "gestor" && (
@@ -29,7 +29,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
             <CardHeader><CardTitle>Nova tarefa</CardTitle></CardHeader>
             <CardContent>
               <form action={createTaskAction} className="space-y-3">
-                <Field label="Titulo" name="title" />
+                <Field label="Título" name="title" />
                 <div className="space-y-2"><Label>Descricao</Label><Textarea name="description" required /></div>
                 <div className="space-y-2"><Label>Responsavel</Label><NativeSelect name="responsibleId">{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</NativeSelect></div>
                 <Field label="Data" name="taskDate" type="date" defaultValue={date} />

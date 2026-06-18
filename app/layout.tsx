@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "BarOps",
-  description: "Gestao profissional de operacoes para restaurantes e bares"
+  title: "AEB Restaurante",
+  description: "Gestão profissional de operações para restaurantes e bares"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

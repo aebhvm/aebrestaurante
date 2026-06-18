@@ -22,7 +22,7 @@ export default async function StockDashboard() {
         <StatCard label="Pendentes" value={requests.filter((item) => item.status === "solicitado").length} icon={Boxes} tone="amber" />
         <StatCard label="Separados" value={requests.filter((item) => item.status === "separado").length} icon={PackageCheck} />
         <StatCard label="Entregues" value={requests.filter((item) => item.status === "entregue").length} icon={CheckCircle2} tone="green" />
-        <StatCard label="Historico do dia" value={requests.length} icon={History} />
+        <StatCard label="Histórico do dia" value={requests.length} icon={History} />
       </section>
       <div className="mt-6">
         <StockTable requests={requests} canUpdate />

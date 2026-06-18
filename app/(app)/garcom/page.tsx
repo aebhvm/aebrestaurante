@@ -18,7 +18,7 @@ export default async function WaiterDashboard() {
 
   return (
     <>
-      <PageHeader title="Meu painel" description="Somente informacoes vinculadas ao seu usuario." />
+      <PageHeader title="Meu painel" description="Somente informações vinculadas ao seu usuário." />
       <div className="grid gap-4 lg:grid-cols-2">
         <ListCard title="Minhas tarefas" items={tasks.map((item) => `${item.taskTime} - ${item.title}`)} />
         <ListCard title="Minha praca" items={stations.map((item) => `${item.name} - ${item.notes ?? "sem observacoes"}`)} />
@@ -27,7 +27,7 @@ export default async function WaiterDashboard() {
       </div>
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>Noticias para mim</CardTitle>
+          <CardTitle>Notícias para mim</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {news.map((item) => (

@@ -10,9 +10,9 @@ export default async function HistoryPage({ searchParams }: { searchParams: Prom
   const rows = await getAuditLogs({ ...params, userId: params.userId ? Number(params.userId) : undefined });
   return (
     <>
-      <PageHeader title="Historico" description="Auditoria por data, usuario, tipo e status." />
+      <PageHeader title="Histórico" description="Auditoria por data, usuário, tipo e status." />
       <DateStatusFilters />
-      <Card><CardContent className="p-0"><Table><THead><TR><TH>Data</TH><TH>Entidade</TH><TH>Registro</TH><TH>Acao</TH><TH>Status</TH><TH>Usuario</TH></TR></THead><TBody>
+      <Card><CardContent className="p-0"><Table><THead><TR><TH>Data</TH><TH>Entidade</TH><TH>Registro</TH><TH>Ação</TH><TH>Status</TH><TH>Usuário</TH></TR></THead><TBody>
         {rows.map((row) => <TR key={row.id}><TD>{new Date(row.occurredAt).toLocaleString("pt-BR")}</TD><TD>{row.entity}</TD><TD>{row.entityId}</TD><TD>{row.action}</TD><TD>{row.status ? <Badge>{row.status}</Badge> : "-"}</TD><TD>{row.actorId ?? "-"}</TD></TR>)}
       </TBody></Table></CardContent></Card>
     </>

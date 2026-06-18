@@ -20,7 +20,7 @@ export default async function StationsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <PageHeader title="Pracas" description="Crie, edite e exclua pracas com descricao. A data inicia sempre no dia atual." />
+      <PageHeader title="Praças" description="Crie, edite e exclua praças com descrição. A data inicia sempre no dia atual." />
       <DateStatusFilters defaultDate={date} />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {session.role === "gestor" && (

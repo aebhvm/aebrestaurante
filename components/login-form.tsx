@@ -25,12 +25,12 @@ export function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="text-xl">Entrar no sistema</CardTitle>
-        <CardDescription>Use seu usuario cadastrado e senha.</CardDescription>
+        <CardDescription>Use seu usuário cadastrado e senha.</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Usuario</Label>
+            <Label htmlFor="username">Usuário</Label>
             <Input id="username" type="text" autoComplete="username" {...form.register("username")} />
             {form.formState.errors.username && <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>}
           </div>

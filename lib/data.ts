@@ -149,7 +149,11 @@ export async function getNewsForUser(session: SessionUser, date = todayISO()) {
       or(
         eq(news.audience, "todos"),
         session.role === "garcom" ? eq(news.audience, "garcons") : undefined,
-        eq(newsRecipients.userId, session.id)
+        sql`exists (
+          select 1 from ${newsRecipients}
+          where ${newsRecipients.newsId} = ${news.id}
+          and ${newsRecipients.userId} = ${session.id}
+        )`
       )
     ),
     with: { recipients: true },

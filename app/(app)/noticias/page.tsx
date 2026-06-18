@@ -24,12 +24,12 @@ export default async function NewsPage() {
             <CardHeader><CardTitle>Nova noticia</CardTitle></CardHeader>
             <CardContent>
               <form action={createNewsAction} className="space-y-3">
-                <Field label="Titulo" name="title" />
+                <Field label="Título" name="title" />
                 <div className="space-y-2"><Label>Conteudo</Label><Textarea name="content" required /></div>
                 <div className="space-y-2"><Label>Prioridade</Label><NativeSelect name="priority"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="baixa">Baixa</option></NativeSelect></div>
                 <Field label="Publicacao" name="publishedAt" type="date" />
                 <Field label="Validade" name="expiresAt" type="date" />
-                <div className="space-y-2"><Label>Destinatarios</Label><NativeSelect name="audience"><option value="todos">Todos</option><option value="usuarios">Usuarios especificos</option><option value="garcons">Apenas garcons</option></NativeSelect></div>
+                <div className="space-y-2"><Label>Destinatários</Label><NativeSelect name="audience"><option value="todos">Todos</option><option value="usuarios">Usuários específicos</option><option value="garcons">Apenas garçons</option></NativeSelect></div>
                 <Field label="PDF" name="pdf" type="file" />
                 <Button className="w-full">Publicar</Button>
               </form>

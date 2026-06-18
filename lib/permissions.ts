@@ -2,7 +2,7 @@ import type { UserRole } from "@/db/schema";
 
 export const roleLabels: Record<UserRole, string> = {
   gestor: "Gestor",
-  garcom: "Garcom",
+  garcom: "Garçom",
   barman: "Barman",
   estoquista: "Estoquista"
 };
