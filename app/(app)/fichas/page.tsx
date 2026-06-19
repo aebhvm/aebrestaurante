@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { createRecipeAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
+import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getRecipes, getStockProducts } from "@/lib/data";
 import { getSession } from "@/lib/session";
 
-export default async function RecipesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+export default async function RecipesPage({ searchParams }: { searchParams: Promise<{ q?: string; ok?: string; erro?: string }> }) {
   const session = (await getSession())!;
   const params = await searchParams;
   const [recipes, products] = await Promise.all([getRecipes(params.q), getStockProducts(true)]);
@@ -17,30 +18,20 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader title="Ficha técnica do bar" description="Receitas, fotos, ingredientes do estoque, preparo e busca por nome." />
+      {(params.ok || params.erro) && <p className={`mb-4 rounded-md border p-3 text-sm ${params.erro ? "border-destructive/40 text-destructive" : "border-emerald-500/40 text-emerald-700"}`}>{params.erro ?? params.ok}</p>}
       <form className="mb-4 flex gap-2 md:max-w-md">
         <Input name="q" placeholder="Buscar drink" defaultValue={params.q} />
         <Button variant="secondary">Buscar</Button>
       </form>
       <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-        {session.role === "gestor" && (
+        {["gestor", "barman"].includes(session.role) && (
           <Card>
             <CardHeader><CardTitle>Nova ficha</CardTitle></CardHeader>
             <CardContent>
               <form action={createRecipeAction} className="space-y-3">
                 <Field label="Nome do drink" name="drinkName" />
                 <Field label="Foto" name="photo" type="file" />
-                <div className="space-y-2">
-                  <Label>Ingredientes do estoque</Label>
-                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {products.map((product) => (
-                      <div key={product.id} className="grid grid-cols-[1fr_120px] items-center gap-2 rounded-md border p-2">
-                        <input type="hidden" name="ingredientProductId" value={product.id} />
-                        <span className="text-sm font-medium">{product.name}</span>
-                        <Input name="ingredientAmount" aria-label={`Quantidade de ${product.name}`} placeholder="Quantidade" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <RecipeIngredientPicker products={products} />
                 <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" required /></div>
                 <Field label="Copo utilizado" name="glass" />
                 <Field label="Guarnição" name="garnish" />

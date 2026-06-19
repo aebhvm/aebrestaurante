@@ -35,8 +35,8 @@ export function StockTable({ requests, canUpdate = false }: { requests: RequestR
             <CardContent className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
                 <div>
-                  <p className="font-medium">{order.orderNumber ?? `Pedido #${order.id}`}</p>
-                  <p className="text-sm text-muted-foreground">{order.requester?.name ?? "-"} · {order.requestDate} às {order.requestTime}</p>
+                  <p className="font-medium">Pedido de {order.requester?.name ?? "solicitante"}</p>
+                  <p className="text-sm text-muted-foreground">{order.requestDate} às {order.requestTime}</p>
                 </div>
                 <Badge variant={order.status === "entregue" ? "secondary" : "default"}>{order.status}</Badge>
               </div>

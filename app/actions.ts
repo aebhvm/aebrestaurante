@@ -20,6 +20,7 @@ import {
   stockProductSchema,
   stockStatusSchema,
   taskSchema,
+  updateStockProductSchema,
   updateUserSchema,
   userSchema
 } from "@/lib/validators";
@@ -255,6 +256,50 @@ export async function createStockProductAction(formData: FormData) {
   revalidatePath("/pedidos");
 }
 
+export async function updateStockProductAction(formData: FormData) {
+  const session = await requireUser(["gestor", "estoquista"]);
+  const parsed = updateStockProductSchema.safeParse({
+    id: requireField(formData, "id"),
+    name: requireField(formData, "name").trim(),
+    unit: requireField(formData, "unit").trim(),
+    active: requireField(formData, "active")
+  });
+  const date = requireField(formData, "date") || todayISO();
+  if (!parsed.success) redirect(`/estoque?date=${date}&erro=Revise os dados do produto.`);
+  const database = requireDb();
+  const duplicate = await database.query.stockProducts.findFirst({ where: eq(stockProducts.name, parsed.data.name) });
+  if (duplicate && duplicate.id !== parsed.data.id) redirect(`/estoque?date=${date}&erro=Já existe outro produto com esse nome.`);
+  await database.update(stockProducts).set({ name: parsed.data.name, unit: parsed.data.unit, active: parsed.data.active, updatedAt: new Date() }).where(eq(stockProducts.id, parsed.data.id));
+  await audit("stock_product", parsed.data.id, "update", session.id, parsed.data.active ? "ativo" : "inativo");
+  revalidatePath("/estoque");
+  revalidatePath("/pedidos");
+  revalidatePath("/fichas");
+  redirect(`/estoque?date=${date}&ok=Produto atualizado com sucesso.`);
+}
+
+export async function deleteStockProductAction(formData: FormData) {
+  const session = await requireUser(["gestor", "estoquista"]);
+  const id = Number(requireField(formData, "id"));
+  const date = requireField(formData, "date") || todayISO();
+  if (!Number.isInteger(id) || id <= 0) redirect(`/estoque?date=${date}&erro=Produto inválido.`);
+  const database = requireDb();
+  const used = await database.query.stockRequests.findFirst({ where: eq(stockRequests.productId, id) });
+  if (used) {
+    await database.update(stockProducts).set({ active: false, updatedAt: new Date() }).where(eq(stockProducts.id, id));
+    await audit("stock_product", id, "deactivate", session.id, "inativo");
+    revalidatePath("/estoque");
+    revalidatePath("/pedidos");
+    revalidatePath("/fichas");
+    redirect(`/estoque?date=${date}&ok=Produto inativado para preservar pedidos antigos.`);
+  }
+  await database.delete(stockProducts).where(eq(stockProducts.id, id));
+  await audit("stock_product", id, "delete", session.id);
+  revalidatePath("/estoque");
+  revalidatePath("/pedidos");
+  revalidatePath("/fichas");
+  redirect(`/estoque?date=${date}&ok=Produto excluído com sucesso.`);
+}
+
 export async function updateStockStatusAction(formData: FormData) {
   const session = await requireUser(["gestor", "estoquista"]);
   const ids = requireField(formData, "ids").split(",").map(Number).filter((id) => Number.isInteger(id) && id > 0);
@@ -276,14 +321,15 @@ export async function updateStockStatusAction(formData: FormData) {
 }
 
 export async function createRecipeAction(formData: FormData) {
-  const session = await requireUser(["gestor"]);
-  const parsed = recipeSchema.parse({
+  const session = await requireUser(["gestor", "barman"]);
+  const parsed = recipeSchema.safeParse({
     drinkName: requireField(formData, "drinkName"),
     preparation: requireField(formData, "preparation"),
     glass: requireField(formData, "glass"),
     garnish: requireField(formData, "garnish"),
     notes: requireField(formData, "notes")
   });
+  if (!parsed.success) redirect("/fichas?erro=Preencha nome, modo de preparo e copo utilizado.");
   const image = formData.get("photo");
   const photoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "recipes") : undefined;
   const productIds = formData.getAll("ingredientProductId").map(Number);
@@ -297,9 +343,10 @@ export async function createRecipeAction(formData: FormData) {
     return product && amount ? [{ productId, item: product.name, amount }] : [];
   });
   if (!ingredients.length) redirect("/fichas?erro=Adicione ao menos um ingrediente cadastrado no estoque.");
-  const [created] = await requireDb().insert(barRecipes).values({ ...parsed, category: "Bar", photoUrl, ingredients, createdBy: session.id }).returning();
+  const [created] = await requireDb().insert(barRecipes).values({ ...parsed.data, category: "Bar", photoUrl, ingredients, createdBy: session.id }).returning();
   await audit("recipe", created.id, "create", session.id, "Bar");
   revalidatePath("/fichas");
+  redirect("/fichas?ok=Ficha técnica salva com sucesso.");
 }
 
 export async function upsertStationAction(formData: FormData) {

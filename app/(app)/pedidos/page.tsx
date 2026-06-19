@@ -1,11 +1,8 @@
-import { createStockRequestAction } from "@/app/actions";
 import { DateStatusFilters } from "@/components/filters";
 import { PageHeader } from "@/components/page-header";
+import { StockOrderBuilder } from "@/components/stock-order-builder";
 import { StockTable } from "@/components/stock-table";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { getStockProducts, getStockRequests } from "@/lib/data";
 import { getSession } from "@/lib/session";
 import { todayISO } from "@/lib/utils";
@@ -27,21 +24,7 @@ export default async function StockRequestsPage({ searchParams }: { searchParams
         {canRequest && (
           <Card>
             <CardHeader><CardTitle>Novo pedido</CardTitle></CardHeader>
-            <CardContent>
-              <form action={createStockRequestAction} className="space-y-3">
-                <Label>Itens do pedido</Label>
-                <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
-                  {products.map((product) => (
-                    <div key={product.id} className="grid grid-cols-[1fr_88px] items-center gap-2 rounded-md border p-2">
-                      <input type="hidden" name="productId" value={product.id} />
-                      <div><p className="text-sm font-medium">{product.name}</p><p className="text-xs text-muted-foreground">{product.unit}</p></div>
-                      <Input aria-label={`Quantidade de ${product.name}`} name="quantity" type="number" min="0" placeholder="0" />
-                    </div>
-                  ))}
-                </div>
-                <Button className="w-full" disabled={!products.length}>Enviar pedido</Button>
-              </form>
-            </CardContent>
+            <CardContent><StockOrderBuilder products={products} /></CardContent>
           </Card>
         )}
         <div className={canRequest ? "" : "lg:col-span-2"}>

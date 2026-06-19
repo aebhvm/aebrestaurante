@@ -41,6 +41,10 @@ export const stockProductSchema = z.object({
   active: z.coerce.boolean().default(true)
 });
 
+export const updateStockProductSchema = stockProductSchema.extend({
+  id: z.coerce.number().int().positive()
+});
+
 export const stationSchema = z.object({
   id: z.coerce.number().int().positive().optional(),
   name: z.string().min(2),

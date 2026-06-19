@@ -6,7 +6,6 @@ import {
   CalendarClock,
   ClipboardList,
   Coffee,
-  History,
   LayoutDashboard,
   LogOut,
   Newspaper,
@@ -31,8 +30,7 @@ const nav = [
   { href: "/descansos", label: "Descansos", icon: PauseCircle, roles: ["gestor"] },
   { href: "/fichas", label: "Fichas", icon: Coffee, roles: ["gestor", "garcom", "barman"] },
   { href: "/pedidos", label: "Pedidos", icon: Boxes, roles: ["gestor", "barman", "estoquista"] },
-  { href: "/noticias", label: "Notícias", icon: Newspaper, roles: ["gestor", "garcom", "barman"] },
-  { href: "/historico", label: "Histórico", icon: History, roles: ["gestor", "estoquista"] }
+  { href: "/noticias", label: "Notícias", icon: Newspaper, roles: ["gestor", "garcom", "barman"] }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
