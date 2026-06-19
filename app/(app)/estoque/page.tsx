@@ -31,7 +31,8 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
         <StatCard label="Pedidos na data" value={orders.length} icon={History} />
       </section>
       <div className="mt-6">
-        <StockTable requests={requests} canUpdate />
+        <h2 className="mb-3 text-lg font-semibold">Pedidos da data selecionada</h2>
+        <StockTable requests={requests} canUpdate selectedDate={date} />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>

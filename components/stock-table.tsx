@@ -1,7 +1,9 @@
-import { updateStockStatusAction } from "@/app/actions";
+import { deleteStockOrderItemAction, updateStockOrderItemAction, updateStockStatusAction } from "@/app/actions";
+import { Save, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/select";
 
 type RequestRow = {
@@ -17,7 +19,7 @@ type RequestRow = {
   requester?: { name: string } | null;
 };
 
-export function StockTable({ requests, canUpdate = false }: { requests: RequestRow[]; canUpdate?: boolean }) {
+export function StockTable({ requests, canUpdate = false, canEdit = false, selectedDate = "" }: { requests: RequestRow[]; canUpdate?: boolean; canEdit?: boolean; selectedDate?: string }) {
   const groups = Array.from(requests.reduce((map, item) => {
     const key = item.orderNumber ?? `LEG-${item.id}`;
     const group = map.get(key) ?? { key, items: [] as RequestRow[] };
@@ -41,7 +43,24 @@ export function StockTable({ requests, canUpdate = false }: { requests: RequestR
                 <Badge variant={order.status === "entregue" ? "secondary" : "default"}>{order.status}</Badge>
               </div>
               <ul className="divide-y py-2 text-sm">
-                {items.map((item) => <li key={item.id} className="flex justify-between gap-3 py-2"><span>{item.product}</span><strong>{item.quantity} {item.unit}</strong></li>)}
+                {items.map((item) => (
+                  <li key={item.id} className="flex flex-col gap-2 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span>{item.product}</span>
+                    {canEdit && order.status === "solicitado" ? (
+                      <div className="flex items-center gap-2">
+                        <form action={updateStockOrderItemAction} className="flex items-center gap-2">
+                          <input type="hidden" name="id" value={item.id} /><input type="hidden" name="date" value={selectedDate || item.requestDate} />
+                          <Input name="quantity" type="number" min="1" defaultValue={item.quantity} className="w-20" aria-label={`Quantidade de ${item.product}`} />
+                          <Button type="submit" size="icon" variant="secondary" aria-label={`Salvar ${item.product}`}><Save className="size-4" /></Button>
+                        </form>
+                        <form action={deleteStockOrderItemAction}>
+                          <input type="hidden" name="id" value={item.id} /><input type="hidden" name="date" value={selectedDate || item.requestDate} />
+                          <Button type="submit" size="icon" variant="ghost" aria-label={`Excluir ${item.product}`}><Trash2 className="size-4" /></Button>
+                        </form>
+                      </div>
+                    ) : <strong>{item.quantity} {item.unit}</strong>}
+                  </li>
+                ))}
               </ul>
               {canUpdate && (
                 <form action={updateStockStatusAction} className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-end">

@@ -63,6 +63,7 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
             <CardContent className="p-4">
               <p className="font-medium">{row.waiter?.name ?? row.bartender?.name ?? "Funcionário"}</p>
               <p className="text-sm text-muted-foreground">{row.station?.name ?? "Sem praça"}</p>
+              {row.station?.description && <p className="mt-1 text-xs text-muted-foreground">{row.station.description}</p>}
               <p className="mt-2 text-xs text-muted-foreground">{row.shiftDate}</p>
             </CardContent>
           </Card>

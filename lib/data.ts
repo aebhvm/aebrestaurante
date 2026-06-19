@@ -169,6 +169,15 @@ export async function getNewsForUser(session: SessionUser, date = todayISO()) {
   );
 }
 
+export async function getActiveNewsForManager(date = todayISO()) {
+  if (!db) return demoNews;
+  return db.query.news.findMany({
+    where: gte(news.expiresAt, date),
+    with: { recipients: { with: { user: true } } },
+    orderBy: [desc(news.publishedAt), desc(news.createdAt)]
+  });
+}
+
 export async function getAuditLogs(filters: Filters = {}) {
   if (!db) return [];
   const conditions = [

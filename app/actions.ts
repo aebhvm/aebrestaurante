@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq, inArray } from "drizzle-orm";
 import { db, requireDb } from "@/db";
-import { appSettings, auditLogs, barRecipes, breaks, news, shifts, stations, stockProducts, stockRequests, tasks, users } from "@/db/schema";
+import { appSettings, auditLogs, barRecipes, breaks, news, newsRecipients, shifts, stations, stockProducts, stockRequests, tasks, users } from "@/db/schema";
 import { clearSession, getSession, setSession } from "@/lib/session";
 import { dashboardForRole } from "@/lib/permissions";
 import {
@@ -206,21 +206,24 @@ export async function createTaskAction(formData: FormData) {
   const [created] = await requireDb().insert(tasks).values({ ...parsed, createdBy: session.id }).returning();
   await audit("task", created.id, "create", session.id, created.status);
   revalidatePath("/tarefas");
+  revalidatePath("/gestor");
 }
 
 export async function createStockRequestAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
+  const requestDate = requireField(formData, "requestDate");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(requestDate)) redirect("/pedidos?erro=Selecione uma data válida para o pedido.");
   const selected = formData.getAll("productId").map((value, index) => ({
     productId: Number(value),
     quantity: Number(formData.getAll("quantity")[index])
   })).filter((item) => Number.isInteger(item.productId) && item.productId > 0 && Number.isInteger(item.quantity) && item.quantity > 0);
-  if (!selected.length) redirect("/pedidos?erro=Selecione ao menos um produto e informe a quantidade.");
+  if (!selected.length) redirect(`/pedidos?date=${requestDate}&erro=Selecione ao menos um produto e informe a quantidade.`);
 
   const database = requireDb();
   const products = await database.query.stockProducts.findMany({
     where: inArray(stockProducts.id, selected.map((item) => item.productId))
   });
-  const orderNumber = `PED-${todayISO().replaceAll("-", "")}-${Date.now().toString().slice(-6)}`;
+  const orderNumber = `PED-${requestDate.replaceAll("-", "")}-${Date.now().toString().slice(-6)}`;
   const values = selected.flatMap((item) => {
     const product = products.find((candidate) => candidate.id === item.productId && candidate.active);
     return product ? [{
@@ -230,17 +233,18 @@ export async function createStockRequestAction(formData: FormData) {
       product: product.name,
       quantity: item.quantity,
       unit: product.unit,
-      requestDate: todayISO(),
+      requestDate,
       requestTime: brasiliaTime(),
       createdBy: session.id
     }] : [];
   });
-  if (!values.length) redirect("/pedidos?erro=Nenhum produto válido foi selecionado.");
+  if (!values.length) redirect(`/pedidos?date=${requestDate}&erro=Nenhum produto válido foi selecionado.`);
   const created = await database.insert(stockRequests).values(values).returning();
   await audit("stock_request", created[0].id, "create", session.id, created[0].status);
   revalidatePath("/pedidos");
   revalidatePath("/estoque");
-  redirect("/pedidos?ok=Pedido criado com sucesso.");
+  revalidatePath("/gestor");
+  redirect(`/pedidos?date=${requestDate}&ok=Pedido criado com sucesso.`);
 }
 
 export async function createStockProductAction(formData: FormData) {
@@ -318,6 +322,41 @@ export async function updateStockStatusAction(formData: FormData) {
   await audit("stock_request", parsed.id, "status_update", session.id, parsed.status);
   revalidatePath("/pedidos");
   revalidatePath("/estoque");
+  revalidatePath("/gestor");
+}
+
+async function requireEditableStockItem(id: number, session: Awaited<ReturnType<typeof requireUser>>) {
+  const item = await requireDb().query.stockRequests.findFirst({ where: eq(stockRequests.id, id) });
+  if (!item || item.status !== "solicitado") return null;
+  if (session.role === "barman" && item.requesterId !== session.id) return null;
+  return item;
+}
+
+export async function updateStockOrderItemAction(formData: FormData) {
+  const session = await requireUser(["gestor", "barman"]);
+  const id = Number(requireField(formData, "id"));
+  const quantity = Number(requireField(formData, "quantity"));
+  const date = requireField(formData, "date") || todayISO();
+  if (!Number.isInteger(id) || !Number.isInteger(quantity) || quantity < 1) redirect(`/pedidos?date=${date}&erro=Quantidade inválida.`);
+  const item = await requireEditableStockItem(id, session);
+  if (!item) redirect(`/pedidos?date=${date}&erro=Este item não pode mais ser alterado.`);
+  await requireDb().update(stockRequests).set({ quantity, updatedAt: new Date() }).where(eq(stockRequests.id, id));
+  await audit("stock_request", id, "item_update", session.id, "solicitado");
+  revalidatePath("/pedidos"); revalidatePath("/estoque"); revalidatePath("/gestor");
+  redirect(`/pedidos?date=${date}&ok=Quantidade atualizada.`);
+}
+
+export async function deleteStockOrderItemAction(formData: FormData) {
+  const session = await requireUser(["gestor", "barman"]);
+  const id = Number(requireField(formData, "id"));
+  const date = requireField(formData, "date") || todayISO();
+  if (!Number.isInteger(id)) redirect(`/pedidos?date=${date}&erro=Item inválido.`);
+  const item = await requireEditableStockItem(id, session);
+  if (!item) redirect(`/pedidos?date=${date}&erro=Este item não pode mais ser excluído.`);
+  await audit("stock_request", id, "item_delete", session.id, "solicitado");
+  await requireDb().delete(stockRequests).where(eq(stockRequests.id, id));
+  revalidatePath("/pedidos"); revalidatePath("/estoque"); revalidatePath("/gestor");
+  redirect(`/pedidos?date=${date}&ok=Produto removido da lista.`);
 }
 
 export async function createRecipeAction(formData: FormData) {
@@ -425,7 +464,7 @@ export async function deleteStationAction(formData: FormData) {
 
 export async function createNewsAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
-  const parsed = newsSchema.parse({
+  const parsed = newsSchema.safeParse({
     title: requireField(formData, "title"),
     content: requireField(formData, "content"),
     priority: requireField(formData, "priority"),
@@ -433,9 +472,49 @@ export async function createNewsAction(formData: FormData) {
     expiresAt: requireField(formData, "expiresAt"),
     audience: requireField(formData, "audience")
   });
+  if (!parsed.success) redirect("/noticias?erro=Revise os campos e as datas da notícia.");
   const pdf = formData.get("pdf");
   const pdfUrl = pdf instanceof File && pdf.size > 0 ? await uploadPublicFile(pdf, "news") : undefined;
-  const [created] = await requireDb().insert(news).values({ ...parsed, pdfUrl, createdBy: session.id }).returning();
+  const database = requireDb();
+  const [created] = await database.insert(news).values({ ...parsed.data, pdfUrl, createdBy: session.id }).returning();
+  const recipientIds = formData.getAll("recipientIds").map(Number).filter((id) => Number.isInteger(id) && id > 0);
+  if (parsed.data.audience === "usuarios" && !recipientIds.length) {
+    await database.delete(news).where(eq(news.id, created.id));
+    redirect("/noticias?erro=Marque ao menos um usuário específico.");
+  }
+  if (parsed.data.audience === "usuarios" && recipientIds.length) {
+    await database.insert(newsRecipients).values(recipientIds.map((userId) => ({ newsId: created.id, userId }))).onConflictDoNothing();
+  }
   await audit("news", created.id, "create", session.id, created.priority);
   revalidatePath("/noticias");
+  revalidatePath("/garcom");
+  redirect("/noticias?ok=Notícia publicada com sucesso.");
+}
+
+export async function updateNewsAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  const parsed = newsSchema.safeParse({ title: requireField(formData, "title"), content: requireField(formData, "content"), priority: requireField(formData, "priority"), publishedAt: requireField(formData, "publishedAt"), expiresAt: requireField(formData, "expiresAt"), audience: requireField(formData, "audience") });
+  if (!Number.isInteger(id) || !parsed.success) redirect("/noticias?erro=Revise os dados da notícia.");
+  const pdf = formData.get("pdf");
+  const pdfUrl = pdf instanceof File && pdf.size > 0 ? await uploadPublicFile(pdf, "news") : requireField(formData, "currentPdfUrl") || undefined;
+  const database = requireDb();
+  const recipientIds = formData.getAll("recipientIds").map(Number).filter((userId) => Number.isInteger(userId) && userId > 0);
+  if (parsed.data.audience === "usuarios" && !recipientIds.length) redirect("/noticias?erro=Marque ao menos um usuário específico.");
+  await database.update(news).set({ ...parsed.data, pdfUrl, updatedAt: new Date() }).where(eq(news.id, id));
+  await database.delete(newsRecipients).where(eq(newsRecipients.newsId, id));
+  if (parsed.data.audience === "usuarios" && recipientIds.length) await database.insert(newsRecipients).values(recipientIds.map((userId) => ({ newsId: id, userId }))).onConflictDoNothing();
+  await audit("news", id, "update", session.id, parsed.data.priority);
+  revalidatePath("/noticias"); revalidatePath("/garcom");
+  redirect("/noticias?ok=Notícia atualizada com sucesso.");
+}
+
+export async function deleteNewsAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  if (!Number.isInteger(id)) redirect("/noticias?erro=Notícia inválida.");
+  await requireDb().delete(news).where(eq(news.id, id));
+  await audit("news", id, "delete", session.id);
+  revalidatePath("/noticias"); revalidatePath("/garcom");
+  redirect("/noticias?ok=Notícia excluída com sucesso.");
 }

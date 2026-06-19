@@ -11,7 +11,7 @@ import { NativeSelect } from "@/components/ui/select";
 type Product = { id: number; name: string; unit: string };
 type OrderItem = Product & { quantity: number };
 
-export function StockOrderBuilder({ products }: { products: Product[] }) {
+export function StockOrderBuilder({ products, requestDate }: { products: Product[]; requestDate: string }) {
   const [productId, setProductId] = useState(products[0]?.id ?? 0);
   const [quantity, setQuantity] = useState(1);
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -30,6 +30,7 @@ export function StockOrderBuilder({ products }: { products: Product[] }) {
 
   return (
     <form action={createStockRequestAction} className="space-y-4">
+      <div className="space-y-2"><Label>Data do pedido</Label><Input name="requestDate" type="date" defaultValue={requestDate} required /></div>
       <div className="space-y-2">
         <Label>Produto</Label>
         <NativeSelect value={productId} onChange={(event) => setProductId(Number(event.target.value))} disabled={!products.length}>

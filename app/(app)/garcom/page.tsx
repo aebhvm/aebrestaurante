@@ -21,7 +21,7 @@ export default async function WaiterDashboard() {
       <div className="grid gap-4 lg:grid-cols-2">
         <ListCard title="Minhas tarefas" items={tasks.map((item) => `${item.taskTime} - ${item.title}`)} />
         <ListCard title="Meu descanso" items={breaks.map((item) => `${item.startsAt} as ${item.endsAt}`)} />
-        <ListCard title="Minha escala" items={shifts.map((item) => item.station?.name ?? "Sem praça definida")} />
+        <ListCard title="Minha escala" items={shifts.map((item) => item.station ? `${item.station.name}${item.station.description ? ` — ${item.station.description}` : ""}` : "Sem praça definida")} />
       </div>
       <Card className="mt-4">
         <CardHeader>

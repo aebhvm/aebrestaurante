@@ -90,7 +90,7 @@ export const newsSchema = z.object({
   publishedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   audience: z.enum(["todos", "usuarios", "garcons"])
-});
+}).refine((data) => data.expiresAt >= data.publishedAt, { message: "Validade deve ser posterior à publicação.", path: ["expiresAt"] });
 
 export const filterSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
