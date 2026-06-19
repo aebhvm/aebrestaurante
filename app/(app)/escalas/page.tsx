@@ -1,4 +1,10 @@
-import { createShiftAction, deleteStationAction, upsertStationAction } from "@/app/actions";
+import {
+  createShiftAction,
+  deleteShiftAction,
+  deleteStationAction,
+  updateShiftAction,
+  upsertStationAction
+} from "@/app/actions";
 import { DateStatusFilters } from "@/components/filters";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -9,7 +15,11 @@ import { NativeSelect } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getShifts, getStationCatalog, getUsers } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { todayISO } from "@/lib/utils";
+import { formatDateBR, todayISO } from "@/lib/utils";
+
+type Employee = { id: number; name: string; role: string };
+type Station = { id: number; name: string; description?: string | null };
+type Shift = { id: number; waiterId?: number | null; bartenderId?: number | null; stationId?: number | null; shiftDate: string };
 
 export default async function ShiftsPage({ searchParams }: { searchParams: Promise<{ date?: string; ok?: string; erro?: string }> }) {
   const session = (await getSession())!;
@@ -46,14 +56,7 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
 
         <Card>
           <CardHeader><CardTitle>Adicionar à escala</CardTitle></CardHeader>
-          <CardContent>
-            <form action={createShiftAction} className="space-y-3">
-              <div className="space-y-2"><Label>Funcionário</Label><NativeSelect name="employeeId" required>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.role === "garcom" ? "Garçom" : "Barman"}</option>)}</NativeSelect></div>
-              <div className="space-y-2"><Label>Praça</Label><NativeSelect name="stationId" required>{stations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</NativeSelect></div>
-              <div className="space-y-2"><Label>Data</Label><Input name="shiftDate" type="date" defaultValue={date} required /></div>
-              <Button className="w-full" disabled={!employees.length || !stations.length}>Salvar escala</Button>
-            </form>
-          </CardContent>
+          <CardContent><ShiftForm employees={employees} stations={stations} date={date} /></CardContent>
         </Card>
       </section>
 
@@ -64,7 +67,29 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
               <p className="font-medium">{row.waiter?.name ?? row.bartender?.name ?? "Funcionário"}</p>
               <p className="text-sm text-muted-foreground">{row.station?.name ?? "Sem praça"}</p>
               {row.station?.description && <p className="mt-1 text-xs text-muted-foreground">{row.station.description}</p>}
-              <p className="mt-2 text-xs text-muted-foreground">{row.shiftDate}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{formatDateBR(row.shiftDate)}</p>
+              <details className="mt-3 border-t pt-3">
+                <summary className="cursor-pointer text-sm font-medium text-primary">Editar escala</summary>
+                <div className="mt-3 space-y-3">
+                  <ShiftForm
+                    employees={employees}
+                    stations={stations}
+                    date={date}
+                    shift={{
+                      id: row.id,
+                      waiterId: row.waiter?.id,
+                      bartenderId: row.bartender?.id,
+                      stationId: row.station?.id,
+                      shiftDate: row.shiftDate
+                    }}
+                  />
+                  <form action={deleteShiftAction}>
+                    <input type="hidden" name="id" value={row.id} />
+                    <input type="hidden" name="date" value={date} />
+                    <Button className="w-full" size="sm" variant="destructive">Excluir escala</Button>
+                  </form>
+                </div>
+              </details>
             </CardContent>
           </Card>
         ))}
@@ -74,7 +99,20 @@ export default async function ShiftsPage({ searchParams }: { searchParams: Promi
   );
 }
 
-function StationForm({ station }: { station?: { id: number; name: string; description?: string | null } }) {
+function ShiftForm({ employees, stations, date, shift }: { employees: Employee[]; stations: Station[]; date: string; shift?: Shift }) {
+  const employeeId = shift?.waiterId ?? shift?.bartenderId;
+  return (
+    <form action={shift ? updateShiftAction : createShiftAction} className="space-y-3">
+      {shift && <input type="hidden" name="id" value={shift.id} />}
+      <div className="space-y-2"><Label>Funcionário</Label><NativeSelect name="employeeId" defaultValue={employeeId ?? ""} required>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name} · {employee.role === "garcom" ? "Garçom" : "Barman"}</option>)}</NativeSelect></div>
+      <div className="space-y-2"><Label>Praça</Label><NativeSelect name="stationId" defaultValue={shift?.stationId ?? ""} required>{stations.map((station) => <option key={station.id} value={station.id}>{station.name}</option>)}</NativeSelect></div>
+      <div className="space-y-2"><Label>Data</Label><Input name="shiftDate" type="date" defaultValue={shift?.shiftDate ?? date} required /></div>
+      <Button className="w-full" size={shift ? "sm" : "default"} disabled={!employees.length || !stations.length}>{shift ? "Salvar alterações" : "Salvar escala"}</Button>
+    </form>
+  );
+}
+
+function StationForm({ station }: { station?: Station }) {
   return (
     <form action={upsertStationAction} className="space-y-3">
       {station && <input type="hidden" name="id" value={station.id} />}

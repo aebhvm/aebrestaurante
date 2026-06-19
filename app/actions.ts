@@ -20,6 +20,8 @@ import {
   stockProductSchema,
   stockStatusSchema,
   taskSchema,
+  updateBreakSchema,
+  updateShiftSchema,
   updateStockProductSchema,
   updateUserSchema,
   userSchema
@@ -427,7 +429,46 @@ export async function createShiftAction(formData: FormData) {
   });
   revalidatePath("/escalas");
   revalidatePath("/gestor");
+  revalidatePath("/garcom");
   redirect(`/escalas?date=${parsed.shiftDate}&ok=Escala criada com sucesso.`);
+}
+
+export async function updateShiftAction(formData: FormData) {
+  await requireUser(["gestor"]);
+  const parsed = updateShiftSchema.safeParse({
+    id: requireField(formData, "id"),
+    employeeId: requireField(formData, "employeeId"),
+    stationId: requireField(formData, "stationId"),
+    shiftDate: requireField(formData, "shiftDate")
+  });
+  if (!parsed.success) redirect("/escalas?erro=Revise os dados da escala.");
+  const employee = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.data.employeeId) });
+  if (!employee || !employee.active || !["garcom", "barman"].includes(employee.role)) {
+    redirect("/escalas?erro=Funcionário inválido.");
+  }
+  await requireDb().update(shifts).set({
+    waiterId: employee.role === "garcom" ? employee.id : null,
+    bartenderId: employee.role === "barman" ? employee.id : null,
+    stationId: parsed.data.stationId,
+    shiftDate: parsed.data.shiftDate,
+    updatedAt: new Date()
+  }).where(eq(shifts.id, parsed.data.id));
+  revalidatePath("/escalas");
+  revalidatePath("/gestor");
+  revalidatePath("/garcom");
+  redirect(`/escalas?date=${parsed.data.shiftDate}&ok=Escala atualizada com sucesso.`);
+}
+
+export async function deleteShiftAction(formData: FormData) {
+  await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  const date = requireField(formData, "date") || todayISO();
+  if (!Number.isInteger(id) || id <= 0) redirect(`/escalas?date=${date}&erro=Escala inválida.`);
+  await requireDb().delete(shifts).where(eq(shifts.id, id));
+  revalidatePath("/escalas");
+  revalidatePath("/gestor");
+  revalidatePath("/garcom");
+  redirect(`/escalas?date=${date}&ok=Escala excluída com sucesso.`);
 }
 
 export async function createBreakAction(formData: FormData) {
@@ -450,7 +491,48 @@ export async function createBreakAction(formData: FormData) {
   });
   revalidatePath("/descansos");
   revalidatePath("/gestor");
+  revalidatePath("/garcom");
   redirect(`/descansos?date=${parsed.breakDate}&ok=Descanso criado com sucesso.`);
+}
+
+export async function updateBreakAction(formData: FormData) {
+  await requireUser(["gestor"]);
+  const parsed = updateBreakSchema.safeParse({
+    id: requireField(formData, "id"),
+    employeeId: requireField(formData, "employeeId"),
+    breakDate: requireField(formData, "breakDate"),
+    startsAt: requireField(formData, "startsAt"),
+    endsAt: requireField(formData, "endsAt")
+  });
+  if (!parsed.success) redirect("/descansos?erro=Revise os dados do descanso.");
+  const employee = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.data.employeeId) });
+  if (!employee || !employee.active || !["garcom", "barman"].includes(employee.role)) {
+    redirect("/descansos?erro=Funcionário inválido.");
+  }
+  await requireDb().update(breaks).set({
+    waiterId: employee.role === "garcom" ? employee.id : null,
+    bartenderId: employee.role === "barman" ? employee.id : null,
+    breakDate: parsed.data.breakDate,
+    startsAt: parsed.data.startsAt,
+    endsAt: parsed.data.endsAt,
+    updatedAt: new Date()
+  }).where(eq(breaks.id, parsed.data.id));
+  revalidatePath("/descansos");
+  revalidatePath("/gestor");
+  revalidatePath("/garcom");
+  redirect(`/descansos?date=${parsed.data.breakDate}&ok=Descanso atualizado com sucesso.`);
+}
+
+export async function deleteBreakAction(formData: FormData) {
+  await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  const date = requireField(formData, "date") || todayISO();
+  if (!Number.isInteger(id) || id <= 0) redirect(`/descansos?date=${date}&erro=Descanso inválido.`);
+  await requireDb().delete(breaks).where(eq(breaks.id, id));
+  revalidatePath("/descansos");
+  revalidatePath("/gestor");
+  revalidatePath("/garcom");
+  redirect(`/descansos?date=${date}&ok=Descanso excluído com sucesso.`);
 }
 
 export async function deleteStationAction(formData: FormData) {
