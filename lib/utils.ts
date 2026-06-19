@@ -38,3 +38,8 @@ export function brasiliaTime(date = new Date()) {
   const parts = brasiliaParts(date);
   return `${parts.hour}:${parts.minute}`;
 }
+
+export function isTaskOverdue(taskDate: string, taskTime: string, now = new Date()) {
+  const today = todayISO(now);
+  return taskDate < today || (taskDate === today && taskTime < brasiliaTime(now));
+}

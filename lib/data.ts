@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   auditLogs,
@@ -16,7 +16,7 @@ import {
 } from "@/db/schema";
 import { demoBreaks, demoLoginSettings, demoNews, demoRecipes, demoShifts, demoStations, demoStockProducts, demoStockRequests, demoTasks, demoUsers } from "@/lib/demo-data";
 import type { SessionUser } from "@/lib/session";
-import { brasiliaTime, todayISO } from "@/lib/utils";
+import { isTaskOverdue, todayISO } from "@/lib/utils";
 
 type Filters = { date?: string; userId?: number; status?: string; type?: string; q?: string };
 
@@ -34,29 +34,26 @@ export async function getManagerDashboard(date = todayISO()) {
   if (!db) {
     const dayTasks = demoTasks.filter((task) => task.taskDate === date);
     return {
-      pendingTasks: dayTasks.filter((task) => task.status === "pendente").length,
+      pendingTasks: dayTasks.filter((task) => task.status === "pendente" && !isTaskOverdue(task.taskDate, task.taskTime)).length,
       completedTasks: dayTasks.filter((task) => task.status === "concluido").length,
-      overdueTasks: dayTasks.filter((task) => task.status === "pendente" && task.taskTime < brasiliaTime()).length,
+      overdueTasks: dayTasks.filter((task) => task.status === "pendente" && isTaskOverdue(task.taskDate, task.taskTime)).length,
       pendingOrders: demoStockRequests.filter((order) => order.status === "solicitado" && order.requestDate === date).length,
       todaysShifts: demoShifts.filter((shift) => shift.shiftDate === date),
       todaysBreaks: demoBreaks.filter((item) => item.breakDate === date)
     };
   }
 
-  const now = brasiliaTime();
-  const [pendingTasks, completedTasks, overdueTasks, pendingOrders, todaysShifts, todaysBreaks] = await Promise.all([
-    db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "pendente"), eq(tasks.taskDate, date))),
-    db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "concluido"), eq(tasks.taskDate, date))),
-    db.select({ value: count() }).from(tasks).where(and(eq(tasks.status, "pendente"), eq(tasks.taskDate, date), sql`${tasks.taskTime} < ${now}`)),
+  const [dayTasks, pendingOrders, todaysShifts, todaysBreaks] = await Promise.all([
+    db.query.tasks.findMany({ where: eq(tasks.taskDate, date) }),
     db.select({ value: sql<number>`count(distinct coalesce(${stockRequests.orderNumber}, ${stockRequests.id}::text))::int` }).from(stockRequests).where(and(eq(stockRequests.status, "solicitado"), eq(stockRequests.requestDate, date))),
     db.query.shifts.findMany({ where: eq(shifts.shiftDate, date), with: { waiter: true, bartender: true, station: true }, orderBy: [shifts.shiftDate] }),
     db.query.breaks.findMany({ where: eq(breaks.breakDate, date), with: { waiter: true, bartender: true }, orderBy: [breaks.startsAt] })
   ]);
 
   return {
-    pendingTasks: pendingTasks[0]?.value ?? 0,
-    completedTasks: completedTasks[0]?.value ?? 0,
-    overdueTasks: overdueTasks[0]?.value ?? 0,
+    pendingTasks: dayTasks.filter((task) => task.status === "pendente" && !isTaskOverdue(task.taskDate, task.taskTime)).length,
+    completedTasks: dayTasks.filter((task) => task.status === "concluido").length,
+    overdueTasks: dayTasks.filter((task) => task.status === "pendente" && isTaskOverdue(task.taskDate, task.taskTime)).length,
     pendingOrders: pendingOrders[0]?.value ?? 0,
     todaysShifts,
     todaysBreaks

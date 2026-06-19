@@ -211,6 +211,25 @@ export async function createTaskAction(formData: FormData) {
   revalidatePath("/gestor");
 }
 
+export async function completeTaskAction(formData: FormData) {
+  const session = await requireUser(["garcom", "barman"]);
+  const id = Number(requireField(formData, "id"));
+  if (!Number.isInteger(id) || id <= 0) redirect("/garcom?erro=Tarefa inválida.");
+
+  const database = requireDb();
+  const task = await database.query.tasks.findFirst({ where: eq(tasks.id, id) });
+  if (!task || task.responsibleId !== session.id) redirect("/garcom?erro=Tarefa não encontrada.");
+
+  if (task.status !== "concluido") {
+    await database.update(tasks).set({ status: "concluido", updatedAt: new Date() }).where(eq(tasks.id, id));
+    await audit("task", id, "complete", session.id, "concluido");
+  }
+  revalidatePath("/garcom");
+  revalidatePath("/gestor");
+  revalidatePath("/tarefas");
+  redirect("/garcom?ok=Tarefa realizada com sucesso.");
+}
+
 export async function createStockRequestAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const requestDate = requireField(formData, "requestDate");
