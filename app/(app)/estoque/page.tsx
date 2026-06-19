@@ -51,15 +51,15 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-3"><div><p className="font-medium">{product.name}</p><p className="text-sm text-muted-foreground">{product.unit} · {product.active ? "Ativo" : "Inativo"}</p></div></div>
                 <details className="mt-3 border-t pt-3">
-                  <summary className="cursor-pointer text-sm font-medium text-primary">Editar produto</summary>
+                  <summary className="cursor-pointer text-sm font-medium text-primary">Editar</summary>
                   <form action={updateStockProductAction} className="mt-3 space-y-2">
                     <input type="hidden" name="id" value={product.id} /><input type="hidden" name="date" value={date} />
                     <div className="space-y-1"><Label>Produto</Label><Input name="name" defaultValue={product.name} required /></div>
                     <div className="space-y-1"><Label>Unidade</Label><Input name="unit" defaultValue={product.unit} required /></div>
                     <div className="space-y-1"><Label>Status</Label><NativeSelect name="active" defaultValue={String(product.active)}><option value="true">Ativo</option><option value="false">Inativo</option></NativeSelect></div>
-                    <Button size="sm" className="w-full">Salvar alterações</Button>
+                    <Button size="sm" className="w-full">Salvar</Button>
                   </form>
-                  <form action={deleteStockProductAction} className="mt-2"><input type="hidden" name="id" value={product.id} /><input type="hidden" name="date" value={date} /><Button size="sm" variant="destructive" className="w-full">Excluir produto</Button></form>
+                  <form action={deleteStockProductAction} className="mt-2"><input type="hidden" name="id" value={product.id} /><input type="hidden" name="date" value={date} /><Button size="sm" variant="destructive" className="w-full">Excluir</Button></form>
                 </details>
               </CardContent>
             </Card>

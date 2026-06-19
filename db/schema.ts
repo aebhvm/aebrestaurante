@@ -181,7 +181,7 @@ export const stockRequests = pgTable(
     id: serial("id").primaryKey(),
     orderNumber: varchar("order_number", { length: 40 }),
     requesterId: integer("requester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-    productId: integer("product_id").notNull().references(() => stockProducts.id, { onDelete: "restrict" }),
+    productId: integer("product_id").references(() => stockProducts.id, { onDelete: "set null" }),
     product: varchar("product", { length: 160 }).notNull(),
     quantity: integer("quantity").notNull(),
     unit: varchar("unit", { length: 40 }).notNull(),

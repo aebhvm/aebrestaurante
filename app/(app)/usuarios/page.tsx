@@ -54,7 +54,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 <Field label="Texto pequeno" name="loginEyebrow" defaultValue={settings.loginEyebrow} />
                 <Field label="Título inicial" name="loginTitle" defaultValue={settings.loginTitle} />
                 <Field label="Subtítulo inicial" name="loginSubtitle" defaultValue={settings.loginSubtitle} />
-                <Button className="w-full">Salvar login</Button>
+                <Button className="w-full">Salvar</Button>
               </form>
             </CardContent>
           </Card>

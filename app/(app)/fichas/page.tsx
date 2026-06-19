@@ -1,7 +1,7 @@
-import Image from "next/image";
 import { createRecipeAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
 import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
+import { RecipePhoto } from "@/components/recipe-photo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
                 <Field label="Copo utilizado" name="glass" />
                 <Field label="Guarnição" name="garnish" />
                 <div className="space-y-2"><Label>Observações</Label><Textarea name="notes" /></div>
-                <Button className="w-full">Salvar ficha</Button>
+                <Button className="w-full">Salvar</Button>
               </form>
             </CardContent>
           </Card>
@@ -44,9 +44,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
         <section className="grid gap-4 md:grid-cols-2">
           {recipes.map((recipe) => (
             <Card key={recipe.id}>
-              <div className="relative aspect-[16/9] overflow-hidden rounded-t-lg bg-muted">
-                {recipe.photoUrl ? <Image src={recipe.photoUrl} alt={recipe.drinkName} fill className="object-cover" /> : null}
-              </div>
+              {recipe.photoUrl ? <RecipePhoto src={recipe.photoUrl} alt={recipe.drinkName} /> : null}
               <CardHeader><CardTitle>{recipe.drinkName}</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>

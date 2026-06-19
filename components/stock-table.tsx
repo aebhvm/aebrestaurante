@@ -70,7 +70,7 @@ export function StockTable({ requests, canUpdate = false, canEdit = false, selec
                     <option value="separado">Separado</option>
                     <option value="entregue">Entregue</option>
                   </NativeSelect>
-                  <Button size="sm" variant="secondary">Salvar status</Button>
+                  <Button size="sm" variant="secondary">Salvar</Button>
                 </form>
               )}
             </CardContent>

@@ -38,7 +38,7 @@ export default async function BreaksPage({ searchParams }: { searchParams: Promi
                 <p className="text-sm text-muted-foreground">{row.startsAt} às {row.endsAt}</p>
                 <p className="mt-2 text-xs text-muted-foreground">{formatDateBR(row.breakDate)}</p>
                 <details className="mt-3 border-t pt-3">
-                  <summary className="cursor-pointer text-sm font-medium text-primary">Editar descanso</summary>
+                  <summary className="cursor-pointer text-sm font-medium text-primary">Editar</summary>
                   <div className="mt-3 space-y-3">
                     <BreakForm
                       employees={employees}
@@ -55,7 +55,7 @@ export default async function BreaksPage({ searchParams }: { searchParams: Promi
                     <form action={deleteBreakAction}>
                       <input type="hidden" name="id" value={row.id} />
                       <input type="hidden" name="date" value={date} />
-                      <Button className="w-full" size="sm" variant="destructive">Excluir descanso</Button>
+                      <Button className="w-full" size="sm" variant="destructive">Excluir</Button>
                     </form>
                   </div>
                 </details>
@@ -77,7 +77,7 @@ function BreakForm({ employees, date, breakItem }: { employees: Employee[]; date
       <div className="space-y-2"><Label>Funcionário</Label><NativeSelect name="employeeId" defaultValue={employeeId ?? ""} required>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}</NativeSelect></div>
       <div className="space-y-2"><Label>Data</Label><Input name="breakDate" type="date" defaultValue={breakItem?.breakDate ?? date} required /></div>
       <div className="grid grid-cols-2 gap-2"><div className="space-y-2"><Label>Início</Label><Input name="startsAt" type="time" defaultValue={breakItem?.startsAt} required /></div><div className="space-y-2"><Label>Fim</Label><Input name="endsAt" type="time" defaultValue={breakItem?.endsAt} required /></div></div>
-      <Button className="w-full" size={breakItem ? "sm" : "default"} disabled={!employees.length}>{breakItem ? "Salvar alterações" : "Salvar descanso"}</Button>
+      <Button className="w-full" size={breakItem ? "sm" : "default"} disabled={!employees.length}>Salvar</Button>
     </form>
   );
 }

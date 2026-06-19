@@ -52,9 +52,9 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                   {values.pdfUrl && <a className="mt-3 inline-flex text-sm font-medium text-primary" href={`/api/news/${item.id}/pdf`} target="_blank" rel="noreferrer">Visualizar PDF</a>}
                   {isManager && (
                     <details className="mt-4 border-t pt-3">
-                      <summary className="cursor-pointer text-sm font-medium text-primary">Editar notícia</summary>
+                      <summary className="cursor-pointer text-sm font-medium text-primary">Editar</summary>
                       <div className="mt-3"><NewsForm users={recipients} news={values} /></div>
-                      <form action={deleteNewsAction} className="mt-2"><input type="hidden" name="id" value={item.id} /><Button className="w-full" size="sm" variant="destructive">Excluir notícia</Button></form>
+                      <form action={deleteNewsAction} className="mt-2"><input type="hidden" name="id" value={item.id} /><Button className="w-full" size="sm" variant="destructive">Excluir</Button></form>
                     </details>
                   )}
                 </CardContent>
@@ -80,7 +80,7 @@ function NewsForm({ users, news }: { users: Array<{ id: number; name: string; ro
       <div className="space-y-2"><Label>Destinatários</Label><NativeSelect name="audience" defaultValue={news?.audience ?? "todos"}><option value="todos">Todos</option><option value="usuarios">Usuários específicos</option><option value="garcons">Apenas garçons</option></NativeSelect></div>
       <div className="space-y-2"><Label>Usuários específicos</Label><div className="max-h-36 space-y-1 overflow-y-auto rounded-md border p-2">{users.map((user) => <label key={user.id} className="flex items-center gap-2 text-sm"><input type="checkbox" name="recipientIds" value={user.id} defaultChecked={news?.recipientIds?.includes(user.id)} />{user.name}</label>)}</div></div>
       <Field label="PDF" name="pdf" type="file" />
-      <Button className="w-full">{news ? "Salvar notícia" : "Publicar"}</Button>
+      <Button className="w-full">{news ? "Salvar" : "Publicar"}</Button>
     </form>
   );
 }

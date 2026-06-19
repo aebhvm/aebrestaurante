@@ -289,15 +289,6 @@ export async function deleteStockProductAction(formData: FormData) {
   const date = requireField(formData, "date") || todayISO();
   if (!Number.isInteger(id) || id <= 0) redirect(`/estoque?date=${date}&erro=Produto inválido.`);
   const database = requireDb();
-  const used = await database.query.stockRequests.findFirst({ where: eq(stockRequests.productId, id) });
-  if (used) {
-    await database.update(stockProducts).set({ active: false, updatedAt: new Date() }).where(eq(stockProducts.id, id));
-    await audit("stock_product", id, "deactivate", session.id, "inativo");
-    revalidatePath("/estoque");
-    revalidatePath("/pedidos");
-    revalidatePath("/fichas");
-    redirect(`/estoque?date=${date}&ok=Produto inativado para preservar pedidos antigos.`);
-  }
   await database.delete(stockProducts).where(eq(stockProducts.id, id));
   await audit("stock_product", id, "delete", session.id);
   revalidatePath("/estoque");
