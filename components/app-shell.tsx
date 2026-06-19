@@ -16,21 +16,22 @@ import { logoutAction } from "@/app/actions";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { MobileNav } from "@/components/mobile-nav";
 import { getLoginSettings } from "@/lib/data";
 import { getSession } from "@/lib/session";
 import { canAccess, dashboardForRole, roleLabels } from "@/lib/permissions";
 
 const nav = [
-  { href: "/gestor", label: "Dashboard", icon: LayoutDashboard, roles: ["gestor"] },
-  { href: "/garcom", label: "Meu painel", icon: ClipboardList, roles: ["garcom", "barman"] },
-  { href: "/estoque", label: "Estoque", icon: Boxes, roles: ["gestor", "estoquista"] },
-  { href: "/usuarios", label: "Usuários", icon: Users, roles: ["gestor"] },
-  { href: "/tarefas", label: "Tarefas", icon: ClipboardList, roles: ["gestor"] },
-  { href: "/escalas", label: "Escalas", icon: CalendarClock, roles: ["gestor"] },
-  { href: "/descansos", label: "Descansos", icon: PauseCircle, roles: ["gestor"] },
-  { href: "/fichas", label: "Fichas", icon: Coffee, roles: ["gestor", "garcom", "barman"] },
-  { href: "/pedidos", label: "Pedidos", icon: Boxes, roles: ["gestor", "barman", "estoquista"] },
-  { href: "/noticias", label: "Notícias", icon: Newspaper, roles: ["gestor", "garcom", "barman"] }
+  { href: "/gestor", label: "Dashboard", icon: LayoutDashboard, iconName: "LayoutDashboard", roles: ["gestor"] },
+  { href: "/garcom", label: "Meu painel", icon: ClipboardList, iconName: "ClipboardList", roles: ["garcom", "barman"] },
+  { href: "/estoque", label: "Estoque", icon: Boxes, iconName: "Boxes", roles: ["gestor", "estoquista"] },
+  { href: "/usuarios", label: "Usuários", icon: Users, iconName: "Users", roles: ["gestor"] },
+  { href: "/tarefas", label: "Tarefas", icon: ClipboardList, iconName: "ClipboardList", roles: ["gestor"] },
+  { href: "/escalas", label: "Escalas", icon: CalendarClock, iconName: "CalendarClock", roles: ["gestor"] },
+  { href: "/descansos", label: "Descansos", icon: PauseCircle, iconName: "PauseCircle", roles: ["gestor"] },
+  { href: "/fichas", label: "Fichas", icon: Coffee, iconName: "Coffee", roles: ["gestor", "garcom", "barman"] },
+  { href: "/pedidos", label: "Pedidos", icon: Boxes, iconName: "Boxes", roles: ["gestor", "barman", "estoquista"] },
+  { href: "/noticias", label: "Notícias", icon: Newspaper, iconName: "Newspaper", roles: ["gestor", "garcom", "barman"] }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -66,16 +67,16 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/85 px-4 backdrop-blur md:px-6">
-          <div>
-            <p className="text-sm font-medium">{roleLabels[session.role]}</p>
-            <p className="text-xs text-muted-foreground">{session.name}</p>
+          <div className="flex min-w-0 items-center gap-2">
+            <MobileNav items={items.map(({ href, label, iconName }) => ({ href, label, iconName: iconName as "Boxes" | "CalendarClock" | "ClipboardList" | "Coffee" | "LayoutDashboard" | "Newspaper" | "PauseCircle" | "Users" }))} brandName={brandName} brandSubtitle={brandSubtitle} logoUrl={settings.loginLogoUrl} />
+            <div className="min-w-0"><p className="truncate text-sm font-medium">{roleLabels[session.role]}</p><p className="truncate text-xs text-muted-foreground">{session.name}</p></div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Notificações">
+            <Button variant="ghost" size="icon" aria-label="Notificações" className="hidden sm:inline-flex">
               <Bell className="size-4" />
             </Button>
             <ThemeToggle />
-            <Avatar>
+            <Avatar className="hidden sm:flex">
               <AvatarFallback>{session.name.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <form action={logoutAction}>
@@ -87,14 +88,6 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">{children}</main>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-card p-1 lg:hidden">
-        {items.slice(0, 5).map((item) => (
-          <Link key={item.href} href={item.href} className="flex min-w-0 flex-1 flex-col items-center gap-1 rounded-md p-2 text-[11px] text-muted-foreground">
-            <item.icon className="size-4" />
-            {item.label.split(" ")[0]}
-          </Link>
-        ))}
-      </nav>
     </div>
   );
 }

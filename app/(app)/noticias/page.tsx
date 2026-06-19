@@ -49,7 +49,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{item.content}</p>
                   <p className="mt-4 text-xs text-muted-foreground">Publicada em {item.publishedAt} · válida até {item.expiresAt}</p>
-                  {values.pdfUrl && <a className="mt-3 inline-flex text-sm text-primary" href={values.pdfUrl}>Abrir PDF</a>}
+                  {values.pdfUrl && <a className="mt-3 inline-flex text-sm font-medium text-primary" href={`/api/news/${item.id}/pdf`} target="_blank" rel="noreferrer">Visualizar PDF</a>}
                   {isManager && (
                     <details className="mt-4 border-t pt-3">
                       <summary className="cursor-pointer text-sm font-medium text-primary">Editar notícia</summary>
