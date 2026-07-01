@@ -24,7 +24,7 @@ import { canAccess, dashboardForRole, roleLabels } from "@/lib/permissions";
 const nav = [
   { href: "/gestor", label: "Dashboard", icon: LayoutDashboard, iconName: "LayoutDashboard", roles: ["gestor"] },
   { href: "/garcom", label: "Meu painel", icon: ClipboardList, iconName: "ClipboardList", roles: ["garcom", "barman"] },
-  { href: "/estoque", label: "Estoque", icon: Boxes, iconName: "Boxes", roles: ["gestor", "estoquista"] },
+  { href: "/estoque", label: "Estoque", icon: Boxes, iconName: "Boxes", roles: ["gestor", "barman", "estoquista"] },
   { href: "/usuarios", label: "Usuários", icon: Users, iconName: "Users", roles: ["gestor"] },
   { href: "/tarefas", label: "Tarefas", icon: ClipboardList, iconName: "ClipboardList", roles: ["gestor"] },
   { href: "/escalas", label: "Escalas", icon: CalendarClock, iconName: "CalendarClock", roles: ["gestor"] },

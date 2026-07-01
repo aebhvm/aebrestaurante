@@ -269,7 +269,7 @@ export async function createStockRequestAction(formData: FormData) {
 }
 
 export async function createStockProductAction(formData: FormData) {
-  const session = await requireUser(["gestor", "estoquista"]);
+  const session = await requireUser(["gestor", "barman", "estoquista"]);
   const parsed = stockProductSchema.parse({
     name: requireField(formData, "name"),
     unit: requireField(formData, "unit"),

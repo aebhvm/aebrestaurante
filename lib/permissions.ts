@@ -10,7 +10,7 @@ export const roleLabels: Record<UserRole, string> = {
 export const protectedRoutes: Record<string, UserRole[]> = {
   "/gestor": ["gestor"],
   "/garcom": ["garcom", "barman"],
-  "/estoque": ["estoquista", "gestor"],
+  "/estoque": ["estoquista", "gestor", "barman"],
   "/usuarios": ["gestor"],
   "/tarefas": ["gestor"],
   "/pracas": ["gestor"],

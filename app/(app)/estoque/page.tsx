@@ -18,6 +18,8 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
   const params = await searchParams;
   const date = params.date ?? todayISO();
   const [requests, products] = await Promise.all([getStockRequests(session, { date }), getStockProducts()]);
+  const canManageProducts = session.role === "gestor" || session.role === "estoquista";
+  const canUpdateOrders = canManageProducts;
   const orders = Array.from(new Set(requests.map((item) => item.orderNumber ?? `LEG-${item.id}`))).map((key) => requests.find((item) => (item.orderNumber ?? `LEG-${item.id}`) === key)!);
   return (
     <>
@@ -32,7 +34,7 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
       </section>
       <div className="mt-6">
         <h2 className="mb-3 text-lg font-semibold">Pedidos da data selecionada</h2>
-        <StockTable requests={requests} canUpdate selectedDate={date} />
+        <StockTable requests={requests} canUpdate={canUpdateOrders} selectedDate={date} />
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>
@@ -45,12 +47,12 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
             </form>
           </CardContent>
         </Card>
-        <section className="grid content-start gap-3 sm:grid-cols-2">
+        <section className="grid content-start gap-2 [grid-template-columns:repeat(auto-fill,minmax(170px,1fr))]">
           {products.map((product) => (
-            <Card key={product.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3"><div><p className="font-medium">{product.name}</p><p className="text-sm text-muted-foreground">{product.unit} · {product.active ? "Ativo" : "Inativo"}</p></div></div>
-                <details className="mt-3 border-t pt-3">
+            <Card key={product.id} className="overflow-hidden">
+              <CardContent className="p-3">
+                <div className="min-w-0"><p className="truncate text-sm font-medium">{product.name}</p><p className="text-xs text-muted-foreground">{product.unit} · {product.active ? "Ativo" : "Inativo"}</p></div>
+                {canManageProducts && <details className="mt-2 border-t pt-2">
                   <summary className="cursor-pointer text-sm font-medium text-primary">Editar</summary>
                   <form action={updateStockProductAction} className="mt-3 space-y-2">
                     <input type="hidden" name="id" value={product.id} /><input type="hidden" name="date" value={date} />
@@ -60,7 +62,7 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
                     <Button size="sm" className="w-full">Salvar</Button>
                   </form>
                   <form action={deleteStockProductAction} className="mt-2"><input type="hidden" name="id" value={product.id} /><input type="hidden" name="date" value={date} /><Button size="sm" variant="destructive" className="w-full">Excluir</Button></form>
-                </details>
+                </details>}
               </CardContent>
             </Card>
           ))}
