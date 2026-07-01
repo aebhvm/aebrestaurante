@@ -371,6 +371,20 @@ export async function deleteStockOrderItemAction(formData: FormData) {
   redirect(`/pedidos?date=${date}&ok=Produto removido da lista.`);
 }
 
+async function collectRecipeIngredients(formData: FormData) {
+  const productIds = formData.getAll("ingredientProductId").map(Number);
+  const amounts = formData.getAll("ingredientAmount").map(String);
+  const products = productIds.length
+    ? await requireDb().query.stockProducts.findMany({ where: inArray(stockProducts.id, productIds) })
+    : [];
+
+  return productIds.flatMap((productId, index) => {
+    const product = products.find((item) => item.id === productId);
+    const amount = amounts[index]?.trim();
+    return product && amount ? [{ productId, item: product.name, amount }] : [];
+  });
+}
+
 export async function createRecipeAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const parsed = recipeSchema.safeParse({
@@ -383,23 +397,52 @@ export async function createRecipeAction(formData: FormData) {
   if (!parsed.success) redirect("/fichas?erro=Preencha nome, modo de preparo e copo utilizado.");
   const image = formData.get("photo");
   const photoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "recipes") : undefined;
-  const productIds = formData.getAll("ingredientProductId").map(Number);
-  const amounts = formData.getAll("ingredientAmount").map(String);
-  const products = productIds.length
-    ? await requireDb().query.stockProducts.findMany({ where: inArray(stockProducts.id, productIds) })
-    : [];
-  const ingredients = productIds.flatMap((productId, index) => {
-    const product = products.find((item) => item.id === productId);
-    const amount = amounts[index]?.trim();
-    return product && amount ? [{ productId, item: product.name, amount }] : [];
-  });
+  const ingredients = await collectRecipeIngredients(formData);
   if (!ingredients.length) redirect("/fichas?erro=Adicione ao menos um ingrediente cadastrado no estoque.");
   const [created] = await requireDb().insert(barRecipes).values({ ...parsed.data, category: "Bar", photoUrl, ingredients, createdBy: session.id }).returning();
   await audit("recipe", created.id, "create", session.id, "Bar");
   revalidatePath("/fichas");
-  redirect("/fichas?ok=Ficha técnica salva com sucesso.");
+  redirect("/fichas?ok=Ficha tecnica salva com sucesso.");
 }
 
+export async function updateRecipeAction(formData: FormData) {
+  const session = await requireUser(["gestor", "barman"]);
+  const id = Number(requireField(formData, "id"));
+  if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha invalida.");
+
+  const parsed = recipeSchema.safeParse({
+    drinkName: requireField(formData, "drinkName"),
+    preparation: requireField(formData, "preparation"),
+    glass: requireField(formData, "glass"),
+    garnish: requireField(formData, "garnish"),
+    notes: requireField(formData, "notes")
+  });
+  if (!parsed.success) redirect("/fichas?erro=Revise os dados da ficha.");
+
+  const existing = await requireDb().query.barRecipes.findFirst({ where: eq(barRecipes.id, id) });
+  if (!existing) redirect("/fichas?erro=Ficha nao encontrada.");
+
+  const image = formData.get("photo");
+  const currentPhotoUrl = requireField(formData, "currentPhotoUrl") || undefined;
+  const photoUrl = image instanceof File && image.size > 0 ? await uploadPublicFile(image, "recipes") : currentPhotoUrl;
+  const ingredients = await collectRecipeIngredients(formData);
+  if (!ingredients.length) redirect("/fichas?erro=Adicione ao menos um ingrediente cadastrado no estoque.");
+
+  await requireDb().update(barRecipes).set({ ...parsed.data, photoUrl, ingredients, updatedAt: new Date() }).where(eq(barRecipes.id, id));
+  await audit("recipe", id, "update", session.id, "Bar");
+  revalidatePath("/fichas");
+  redirect("/fichas?ok=Ficha atualizada com sucesso.");
+}
+
+export async function deleteRecipeAction(formData: FormData) {
+  const session = await requireUser(["gestor", "barman"]);
+  const id = Number(requireField(formData, "id"));
+  if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha invalida.");
+  await audit("recipe", id, "delete", session.id);
+  await requireDb().delete(barRecipes).where(eq(barRecipes.id, id));
+  revalidatePath("/fichas");
+  redirect("/fichas?ok=Ficha excluida com sucesso.");
+}
 export async function upsertStationAction(formData: FormData) {
   const session = await requireUser(["gestor"]);
   const parsed = stationSchema.parse({

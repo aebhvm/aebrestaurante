@@ -1,4 +1,4 @@
-import { createRecipeAction } from "@/app/actions";
+import { createRecipeAction, deleteRecipeAction, updateRecipeAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
 import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
 import { RecipePhoto } from "@/components/recipe-photo";
@@ -14,6 +14,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
   const session = (await getSession())!;
   const params = await searchParams;
   const [recipes, products] = await Promise.all([getRecipes(params.q), getStockProducts(true)]);
+  const canManageRecipes = ["gestor", "barman"].includes(session.role);
 
   return (
     <>
@@ -24,17 +25,17 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
         <Button variant="secondary">Buscar</Button>
       </form>
       <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
-        {["gestor", "barman"].includes(session.role) && (
+        {canManageRecipes && (
           <Card>
             <CardHeader><CardTitle>Nova ficha</CardTitle></CardHeader>
             <CardContent>
               <form action={createRecipeAction} className="space-y-3">
                 <Field label="Nome do drink" name="drinkName" />
-                <Field label="Foto" name="photo" type="file" />
+                <Field label="Foto" name="photo" type="file" required={false} />
                 <RecipeIngredientPicker products={products} />
                 <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" required /></div>
                 <Field label="Copo utilizado" name="glass" />
-                <Field label="Guarnição" name="garnish" />
+                <Field label="Guarnição" name="garnish" required={false} />
                 <div className="space-y-2"><Label>Observações</Label><Textarea name="notes" /></div>
                 <Button className="w-full">Salvar</Button>
               </form>
@@ -55,6 +56,27 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
                 </div>
                 <div><p className="font-medium">Passo a passo</p><p className="text-muted-foreground">{recipe.preparation}</p></div>
                 <p className="text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnição"}</p>
+                {canManageRecipes && (
+                  <details className="border-t pt-3">
+                    <summary className="cursor-pointer text-sm font-medium text-primary">Editar</summary>
+                    <form action={updateRecipeAction} className="mt-3 space-y-3">
+                      <input type="hidden" name="id" value={recipe.id} />
+                      <input type="hidden" name="currentPhotoUrl" value={recipe.photoUrl ?? ""} />
+                      <Field label="Nome do drink" name="drinkName" defaultValue={recipe.drinkName} />
+                      <Field label="Trocar foto" name="photo" type="file" required={false} />
+                      <RecipeIngredientPicker products={products} initialIngredients={recipe.ingredients} />
+                      <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" defaultValue={recipe.preparation} required /></div>
+                      <Field label="Copo utilizado" name="glass" defaultValue={recipe.glass} />
+                      <Field label="Guarnição" name="garnish" defaultValue={recipe.garnish ?? ""} required={false} />
+                      <div className="space-y-2"><Label>Observações</Label><Textarea name="notes" defaultValue={"notes" in recipe ? recipe.notes ?? "" : ""} /></div>
+                      <Button size="sm" className="w-full">Salvar</Button>
+                    </form>
+                    <form action={deleteRecipeAction} className="mt-2">
+                      <input type="hidden" name="id" value={recipe.id} />
+                      <Button size="sm" variant="destructive" className="w-full">Excluir</Button>
+                    </form>
+                  </details>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -64,6 +86,6 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
   );
 }
 
-function Field({ label, name, type = "text" }: { label: string; name: string; type?: string }) {
-  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} required={name !== "photo" && name !== "garnish"} /></div>;
+function Field({ label, name, type = "text", defaultValue, required = true }: { label: string; name: string; type?: string; defaultValue?: string; required?: boolean }) {
+  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} defaultValue={defaultValue} required={required} /></div>;
 }

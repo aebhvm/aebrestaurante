@@ -8,12 +8,20 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/select";
 
 type Product = { id: number; name: string };
+type SavedIngredient = { productId?: number; item: string; amount: string };
 type Ingredient = Product & { amount: string };
 
-export function RecipeIngredientPicker({ products }: { products: Product[] }) {
+function normalizeIngredients(products: Product[], initialIngredients: SavedIngredient[] = []) {
+  return initialIngredients.flatMap((ingredient) => {
+    const product = products.find((item) => item.id === ingredient.productId) ?? products.find((item) => item.name === ingredient.item);
+    return product ? [{ ...product, amount: ingredient.amount }] : [];
+  });
+}
+
+export function RecipeIngredientPicker({ products, initialIngredients = [] }: { products: Product[]; initialIngredients?: SavedIngredient[] }) {
   const [productId, setProductId] = useState(products[0]?.id ?? 0);
   const [amount, setAmount] = useState("");
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>(() => normalizeIngredients(products, initialIngredients));
 
   function addIngredient() {
     const product = products.find((item) => item.id === productId);
