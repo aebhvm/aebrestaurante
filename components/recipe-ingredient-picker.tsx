@@ -19,7 +19,7 @@ function normalizeIngredients(products: Product[], initialIngredients: SavedIngr
 }
 
 export function RecipeIngredientPicker({ products, initialIngredients = [] }: { products: Product[]; initialIngredients?: SavedIngredient[] }) {
-  const [productId, setProductId] = useState(products[0]?.id ?? 0);
+  const [productId, setProductId] = useState(0);
   const [amount, setAmount] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => normalizeIngredients(products, initialIngredients));
 
@@ -32,6 +32,7 @@ export function RecipeIngredientPicker({ products, initialIngredients = [] }: { 
         ? current.map((item) => item.id === product.id ? next : item)
         : [...current, next];
     });
+    setProductId(0);
     setAmount("");
   }
 
@@ -40,11 +41,12 @@ export function RecipeIngredientPicker({ products, initialIngredients = [] }: { 
       <Label>Ingredientes</Label>
       <div className="space-y-2">
         <NativeSelect value={productId} onChange={(event) => setProductId(Number(event.target.value))} disabled={!products.length}>
+          <option value={0}>Selecione o insumo</option>
           {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
         </NativeSelect>
         <div className="grid grid-cols-[1fr_auto] gap-2">
           <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Quantidade, ex.: 30 ml" />
-          <Button type="button" variant="secondary" onClick={addIngredient} disabled={!products.length}><Plus className="size-4" />Adicionar</Button>
+          <Button type="button" variant="secondary" onClick={addIngredient} disabled={!products.length || !productId}><Plus className="size-4" />Adicionar</Button>
         </div>
       </div>
       {ingredients.map((ingredient) => (
