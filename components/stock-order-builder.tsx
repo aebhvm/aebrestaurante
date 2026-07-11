@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 type Product = { id: number; name: string; unit: string };
 type OrderItem = Product & { quantity: number };
@@ -53,6 +54,10 @@ export function StockOrderBuilder({ products, requestDate }: { products: Product
           </div>
         ))}
         {!items.length && <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">Adicione os produtos antes de enviar.</p>}
+      </div>
+      <div className="space-y-2">
+        <Label>Observação</Label>
+        <Textarea name="reason" placeholder="Observação para o estoquista" />
       </div>
       <Button className="w-full" disabled={!items.length}>Enviar lista ao estoque</Button>
     </form>

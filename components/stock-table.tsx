@@ -62,6 +62,7 @@ export function StockTable({ requests, canUpdate = false, canEdit = false, selec
                   </li>
                 ))}
               </ul>
+              {order.reason && <div className="border-t py-3 text-sm"><p className="font-medium">Observação</p><p className="mt-1 text-muted-foreground">{order.reason}</p></div>}
               {canUpdate && (
                 <form action={updateStockStatusAction} className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-end">
                   <input type="hidden" name="ids" value={items.map((item) => item.id).join(",")} />

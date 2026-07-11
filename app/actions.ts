@@ -233,6 +233,7 @@ export async function completeTaskAction(formData: FormData) {
 export async function createStockRequestAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const requestDate = requireField(formData, "requestDate");
+  const reason = requireField(formData, "reason").trim() || undefined;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(requestDate)) redirect("/pedidos?erro=Selecione uma data válida para o pedido.");
   const selected = formData.getAll("productId").map((value, index) => ({
     productId: Number(value),
@@ -254,6 +255,7 @@ export async function createStockRequestAction(formData: FormData) {
       product: product.name,
       quantity: item.quantity,
       unit: product.unit,
+      reason,
       requestDate,
       requestTime: brasiliaTime(),
       createdBy: session.id
