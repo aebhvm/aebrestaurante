@@ -347,7 +347,7 @@ async function requireEditableStockItem(id: number, session: Awaited<ReturnType<
 }
 
 export async function updateStockOrderItemAction(formData: FormData) {
-  const session = await requireUser(["gestor", "barman"]);
+  const session = await requireUser(["gestor", "barman", "estoquista"]);
   const id = Number(requireField(formData, "id"));
   const quantity = Number(requireField(formData, "quantity"));
   const date = requireField(formData, "date") || todayISO();
@@ -361,7 +361,7 @@ export async function updateStockOrderItemAction(formData: FormData) {
 }
 
 export async function deleteStockOrderItemAction(formData: FormData) {
-  const session = await requireUser(["gestor", "barman"]);
+  const session = await requireUser(["gestor", "barman", "estoquista"]);
   const id = Number(requireField(formData, "id"));
   const date = requireField(formData, "date") || todayISO();
   if (!Number.isInteger(id)) redirect(`/pedidos?date=${date}&erro=Item inválido.`);

@@ -15,6 +15,7 @@ export default async function StockRequestsPage({ searchParams }: { searchParams
   const [requests, products] = await Promise.all([getStockRequests(session, filters), getStockProducts(true)]);
   const canRequest = session.role === "gestor" || session.role === "barman";
   const canUpdate = session.role === "gestor" || session.role === "estoquista";
+  const canEdit = canRequest || session.role === "estoquista";
 
   return (
     <>
@@ -29,7 +30,7 @@ export default async function StockRequestsPage({ searchParams }: { searchParams
           </Card>
         )}
         <div className={canRequest ? "" : "lg:col-span-2"}>
-          <StockTable requests={requests} canUpdate={canUpdate} canEdit={canRequest} selectedDate={date} />
+          <StockTable requests={requests} canUpdate={canUpdate} canEdit={canEdit} selectedDate={date} />
         </div>
       </div>
     </>
