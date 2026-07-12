@@ -1,5 +1,6 @@
-import { createRecipeAction, deleteRecipeAction, updateRecipeAction } from "@/app/actions";
+import { createRecipeAction } from "@/app/actions";
 import { PageHeader } from "@/components/page-header";
+import { RecipeEditDialog } from "@/components/recipe-edit-dialog";
 import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
 import { RecipePhoto } from "@/components/recipe-photo";
 import { Button } from "@/components/ui/button";
@@ -18,68 +19,67 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <PageHeader title="Ficha técnica do bar" description="Receitas, fotos, ingredientes do estoque, preparo e busca por nome." />
+      <PageHeader title="Ficha técnica do bar" description="Receitas compactas, ingredientes do estoque e preparo." />
       {(params.ok || params.erro) && <p className={`mb-4 rounded-md border p-3 text-sm ${params.erro ? "border-destructive/40 text-destructive" : "border-emerald-500/40 text-emerald-700"}`}>{params.erro ?? params.ok}</p>}
       <form className="mb-4 flex gap-2 md:max-w-md">
         <Input name="q" placeholder="Buscar drink" defaultValue={params.q} />
         <Button variant="secondary">Buscar</Button>
       </form>
-      <div className="grid gap-4 xl:grid-cols-[380px_1fr]">
+      <div className="grid gap-4 xl:grid-cols-[320px_1fr]">
         {canManageRecipes && (
-          <Card>
-            <CardHeader><CardTitle>Nova ficha</CardTitle></CardHeader>
-            <CardContent>
-              <form action={createRecipeAction} className="space-y-3">
+          <Card className="self-start">
+            <CardHeader className="p-3 pb-2"><CardTitle className="text-base">Nova ficha</CardTitle></CardHeader>
+            <CardContent className="p-3 pt-0">
+              <form action={createRecipeAction} className="space-y-2.5">
                 <Field label="Nome do drink" name="drinkName" />
                 <Field label="Foto" name="photo" type="file" required={false} />
-                <RecipeIngredientPicker products={products} />
-                <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" required /></div>
-                <Field label="Copo utilizado" name="glass" />
-                <Field label="Guarnição" name="garnish" required={false} />
-                <div className="space-y-2"><Label>Observações</Label><Textarea name="notes" /></div>
-                <Button className="w-full">Salvar</Button>
+                <RecipeIngredientPicker products={products} compact />
+                <div className="space-y-1.5"><Label>Modo de preparo</Label><Textarea name="preparation" required className="min-h-20" /></div>
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+                  <Field label="Copo utilizado" name="glass" />
+                  <Field label="Guarnição" name="garnish" required={false} />
+                </div>
+                <div className="space-y-1.5"><Label>Observações</Label><Textarea name="notes" className="min-h-16" /></div>
+                <Button size="sm" className="w-full">Salvar</Button>
               </form>
             </CardContent>
           </Card>
         )}
-        <section className="grid gap-4 md:grid-cols-2">
-          {recipes.map((recipe) => (
-            <Card key={recipe.id}>
-              {recipe.photoUrl ? <RecipePhoto src={recipe.photoUrl} alt={recipe.drinkName} /> : null}
-              <CardHeader><CardTitle>{recipe.drinkName}</CardTitle></CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div>
-                  <p className="font-medium">Ingredientes</p>
-                  <ul className="mt-1 text-muted-foreground">
-                    {recipe.ingredients.map((ingredient) => <li key={`${ingredient.item}-${ingredient.amount}`}>{ingredient.item}: {ingredient.amount}</li>)}
-                  </ul>
-                </div>
-                <div><p className="font-medium">Passo a passo</p><p className="text-muted-foreground">{recipe.preparation}</p></div>
-                <p className="text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnição"}</p>
-                {canManageRecipes && (
-                  <details className="border-t pt-3">
-                    <summary className="cursor-pointer text-sm font-medium text-primary">Editar</summary>
-                    <form action={updateRecipeAction} className="mt-3 space-y-3">
-                      <input type="hidden" name="id" value={recipe.id} />
-                      <input type="hidden" name="currentPhotoUrl" value={recipe.photoUrl ?? ""} />
-                      <Field label="Nome do drink" name="drinkName" defaultValue={recipe.drinkName} />
-                      <Field label="Trocar foto" name="photo" type="file" required={false} />
-                      <RecipeIngredientPicker products={products} initialIngredients={recipe.ingredients} />
-                      <div className="space-y-2"><Label>Modo de preparo</Label><Textarea name="preparation" defaultValue={recipe.preparation} required /></div>
-                      <Field label="Copo utilizado" name="glass" defaultValue={recipe.glass} />
-                      <Field label="Guarnição" name="garnish" defaultValue={recipe.garnish ?? ""} required={false} />
-                      <div className="space-y-2"><Label>Observações</Label><Textarea name="notes" defaultValue={"notes" in recipe ? recipe.notes ?? "" : ""} /></div>
-                      <Button size="sm" className="w-full">Salvar</Button>
-                    </form>
-                    <form action={deleteRecipeAction} className="mt-2">
-                      <input type="hidden" name="id" value={recipe.id} />
-                      <Button size="sm" variant="destructive" className="w-full">Excluir</Button>
-                    </form>
-                  </details>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+        <section className="grid content-start gap-3 [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]">
+          {recipes.map((recipe) => {
+            const notes = "notes" in recipe ? recipe.notes ?? "" : "";
+            return (
+              <Card key={recipe.id} className="overflow-hidden">
+                <CardContent className="p-3">
+                  <div className="flex gap-3">
+                    {recipe.photoUrl ? (
+                      <RecipePhoto src={recipe.photoUrl} alt={recipe.drinkName} className="h-24 w-24 shrink-0 rounded-md" sizes="96px" />
+                    ) : (
+                      <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-md border bg-muted text-xs text-muted-foreground">Sem foto</div>
+                    )}
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div>
+                        <h2 className="truncate text-base font-semibold">{recipe.drinkName}</h2>
+                        <p className="truncate text-xs text-muted-foreground">{recipe.glass} | {recipe.garnish ?? "sem guarnição"}</p>
+                      </div>
+                      <div className="text-sm">
+                        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ingredientes</p>
+                        <ul className="mt-1 space-y-0.5 text-muted-foreground">
+                          {recipe.ingredients.slice(0, 4).map((ingredient) => <li key={`${ingredient.item}-${ingredient.amount}`} className="truncate">{ingredient.item}: {ingredient.amount}</li>)}
+                          {recipe.ingredients.length > 4 ? <li className="text-xs">+ {recipe.ingredients.length - 4} itens</li> : null}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-3 border-t pt-2 text-sm">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Preparo</p>
+                    <p className="mt-1 max-h-16 overflow-hidden text-muted-foreground">{recipe.preparation}</p>
+                  </div>
+                  {canManageRecipes && <div className="mt-2 flex justify-end"><RecipeEditDialog recipe={{ ...recipe, notes }} products={products} /></div>}
+                </CardContent>
+              </Card>
+            );
+          })}
         </section>
       </div>
     </>
@@ -87,5 +87,5 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
 }
 
 function Field({ label, name, type = "text", defaultValue, required = true }: { label: string; name: string; type?: string; defaultValue?: string; required?: boolean }) {
-  return <div className="space-y-2"><Label>{label}</Label><Input name={name} type={type} defaultValue={defaultValue} required={required} /></div>;
+  return <div className="space-y-1.5"><Label>{label}</Label><Input name={name} type={type} defaultValue={defaultValue} required={required} /></div>;
 }

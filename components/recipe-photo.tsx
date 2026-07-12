@@ -4,8 +4,9 @@ import Image from "next/image";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function RecipePhoto({ src, alt }: { src: string; alt: string }) {
+export function RecipePhoto({ src, alt, className, sizes = "(min-width: 1280px) 35vw, (min-width: 768px) 50vw, 100vw" }: { src: string; alt: string; className?: string; sizes?: string }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -19,11 +20,11 @@ export function RecipePhoto({ src, alt }: { src: string; alt: string }) {
     <>
       <button
         type="button"
-        className="relative block aspect-[16/9] w-full overflow-hidden rounded-t-md bg-muted p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn("relative block aspect-[16/9] w-full overflow-hidden rounded-t-md bg-muted p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", className)}
         onClick={() => setOpen(true)}
         aria-label={`Ampliar foto de ${alt}`}
       >
-        <Image src={src} alt={alt} fill sizes="(min-width: 1280px) 35vw, (min-width: 768px) 50vw, 100vw" className="object-contain p-2" />
+        <Image src={src} alt={alt} fill sizes={sizes} className="object-contain p-1" />
       </button>
       {open && (
         <div

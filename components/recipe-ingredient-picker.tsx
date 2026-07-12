@@ -18,7 +18,7 @@ function normalizeIngredients(products: Product[], initialIngredients: SavedIngr
   });
 }
 
-export function RecipeIngredientPicker({ products, initialIngredients = [] }: { products: Product[]; initialIngredients?: SavedIngredient[] }) {
+export function RecipeIngredientPicker({ products, initialIngredients = [], compact = false }: { products: Product[]; initialIngredients?: SavedIngredient[]; compact?: boolean }) {
   const [productId, setProductId] = useState(0);
   const [amount, setAmount] = useState("");
   const [ingredients, setIngredients] = useState<Ingredient[]>(() => normalizeIngredients(products, initialIngredients));
@@ -37,27 +37,27 @@ export function RecipeIngredientPicker({ products, initialIngredients = [] }: { 
   }
 
   return (
-    <div className="space-y-3">
+    <div className={compact ? "space-y-2" : "space-y-3"}>
       <Label>Ingredientes</Label>
       <div className="space-y-2">
         <NativeSelect value={productId} onChange={(event) => setProductId(Number(event.target.value))} disabled={!products.length}>
           <option value={0}>Selecione o insumo</option>
           {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
         </NativeSelect>
-        <div className="grid grid-cols-[1fr_auto] gap-2">
-          <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Quantidade, ex.: 30 ml" />
+        <div className={compact ? "contents" : "grid grid-cols-[1fr_auto] gap-2"}>
+          <Input value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Qtd., ex.: 30 ml" />
           <Button type="button" variant="secondary" onClick={addIngredient} disabled={!products.length || !productId}><Plus className="size-4" />Adicionar</Button>
         </div>
       </div>
       {ingredients.map((ingredient) => (
-        <div key={ingredient.id} className="flex items-center justify-between gap-3 rounded-md border p-2 text-sm">
+        <div key={ingredient.id} className="flex items-center justify-between gap-3 rounded-md border px-2 py-1.5 text-sm">
           <span><strong>{ingredient.name}</strong> · {ingredient.amount}</span>
           <Button type="button" size="icon" variant="ghost" aria-label={`Remover ${ingredient.name}`} onClick={() => setIngredients((current) => current.filter((item) => item.id !== ingredient.id))}><Trash2 className="size-4" /></Button>
           <input type="hidden" name="ingredientProductId" value={ingredient.id} />
           <input type="hidden" name="ingredientAmount" value={ingredient.amount} />
         </div>
       ))}
-      {!ingredients.length && <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">Nenhum ingrediente adicionado.</p>}
+      {!ingredients.length && <p className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">Nenhum ingrediente adicionado.</p>}
     </div>
   );
 }
