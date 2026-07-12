@@ -25,10 +25,14 @@ type EditableRecipe = {
 
 export function RecipeEditDialog({ recipe, products }: { recipe: EditableRecipe; products: Product[] }) {
   const [open, setOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   return (
     <>
-      <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-primary" onClick={() => setOpen(true)}>
+      <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-primary" onClick={() => {
+        setConfirmingDelete(false);
+        setOpen(true);
+      }}>
         <Pencil className="size-4" />
         Editar
       </Button>
@@ -45,7 +49,7 @@ export function RecipeEditDialog({ recipe, products }: { recipe: EditableRecipe;
               </Button>
             </div>
             {recipe.photoUrl ? <RecipePhoto src={recipe.photoUrl} alt={recipe.drinkName} className="mb-4 h-32 rounded-md" sizes="320px" /> : null}
-            <form action={updateRecipeAction} className="grid gap-3 md:grid-cols-2">
+            <form action={updateRecipeAction} onSubmit={() => setOpen(false)} className="grid gap-3 md:grid-cols-2">
               <input type="hidden" name="id" value={recipe.id} />
               <input type="hidden" name="currentPhotoUrl" value={recipe.photoUrl ?? ""} />
               <Field label="Nome do drink" name="drinkName" defaultValue={recipe.drinkName} />
@@ -58,12 +62,22 @@ export function RecipeEditDialog({ recipe, products }: { recipe: EditableRecipe;
               <Field label="Guarnição" name="garnish" defaultValue={recipe.garnish ?? ""} required={false} />
               <div className="space-y-2 md:col-span-2"><Label>Observações</Label><Textarea name="notes" defaultValue={recipe.notes ?? ""} className="min-h-20" /></div>
               <div className="flex justify-end md:col-span-2">
-                <Button size="sm"><Save className="size-4" />Salvar</Button>
+                <Button type="submit" size="sm"><Save className="size-4" />Salvar</Button>
               </div>
             </form>
-            <form action={deleteRecipeAction} className="mt-3 border-t pt-3">
+            <form action={deleteRecipeAction} onSubmit={() => setOpen(false)} className="mt-3 border-t pt-3">
               <input type="hidden" name="id" value={recipe.id} />
-              <Button size="sm" variant="destructive"><Trash2 className="size-4" />Excluir</Button>
+              {confirmingDelete ? (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-destructive">Confirmar exclusao desta ficha?</p>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingDelete(false)}>Cancelar</Button>
+                    <Button type="submit" size="sm" variant="destructive"><Trash2 className="size-4" />Confirmar exclusao</Button>
+                  </div>
+                </div>
+              ) : (
+                <Button type="button" size="sm" variant="destructive" onClick={() => setConfirmingDelete(true)}><Trash2 className="size-4" />Excluir</Button>
+              )}
             </form>
           </div>
         </div>
