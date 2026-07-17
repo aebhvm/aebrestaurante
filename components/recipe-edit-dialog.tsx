@@ -1,107 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useState, useTransition } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
-import { deleteRecipeAction, updateRecipeAction } from "@/app/actions";
+import { deleteRecipeAction, getRecipeEditorDataAction, updateRecipeAction } from "@/app/actions";
 import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
-import { RecipePhoto } from "@/components/recipe-photo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type Product = { id: number; name: string };
-type Ingredient = { productId?: number; item: string; amount: string };
-type EditableRecipe = {
-  id: number;
-  drinkName: string;
-  photoUrl?: string | null;
-  ingredients: Ingredient[];
-  preparation: string;
-  glass: string;
-  garnish?: string | null;
-  notes?: string | null;
-};
+type EditorData = Awaited<ReturnType<typeof getRecipeEditorDataAction>>;
 
-export function RecipeEditDialog({
-  recipe,
-  products,
-  open,
-  onOpenChange
-}: {
-  recipe: EditableRecipe;
-  products: Product[];
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}) {
-  const [internalOpen, setInternalOpen] = useState(false);
+export function RecipeEditDialog({ recipeId, drinkName }: { recipeId: number; drinkName: string }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<EditorData | null>(null);
+  const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const isControlled = open !== undefined;
-  const dialogOpen = open ?? internalOpen;
+  const [isPending, startTransition] = useTransition();
 
-  function setDialogOpen(nextOpen: boolean) {
-    if (nextOpen) setConfirmingDelete(false);
-    if (isControlled) {
-      onOpenChange?.(nextOpen);
-      return;
-    }
-    setInternalOpen(nextOpen);
+  function openDialog() {
+    setOpen(true);
+    setConfirmingDelete(false);
+    if (data) return;
+    setError("");
+    startTransition(async () => {
+      try {
+        setData(await getRecipeEditorDataAction(recipeId));
+      } catch {
+        setError("Não foi possível carregar esta ficha. Feche e tente novamente.");
+      }
+    });
   }
 
   return (
     <>
-      {!isControlled ? (
-        <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-primary" onClick={() => setDialogOpen(true)}>
-          <Pencil className="size-4" />
-          Editar
-        </Button>
-      ) : null}
-      {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label={`Editar ${recipe.drinkName}`}>
+      <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-primary" onClick={openDialog}>
+        <Pencil className="size-4" />
+        Editar
+      </Button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label={`Editar ${drinkName}`}>
           <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-lg border bg-card p-4 shadow-xl">
             <div className="mb-4 flex items-start justify-between gap-3 border-b pb-3">
               <div>
                 <h2 className="text-lg font-semibold">Editar ficha</h2>
-                <p className="text-sm text-muted-foreground">{recipe.drinkName}</p>
+                <p className="text-sm text-muted-foreground">{drinkName}</p>
               </div>
-              <Button type="button" size="icon" variant="ghost" aria-label="Fechar" onClick={() => setDialogOpen(false)}>
+              <Button type="button" size="icon" variant="ghost" aria-label="Fechar" onClick={() => setOpen(false)}>
                 <X className="size-4" />
               </Button>
             </div>
-            {recipe.photoUrl ? <RecipePhoto src={recipe.photoUrl} alt={recipe.drinkName} className="mb-4 h-32 rounded-md" sizes="320px" /> : null}
-            <form action={updateRecipeAction} onSubmit={() => setDialogOpen(false)} className="grid gap-3 md:grid-cols-2">
-              <input type="hidden" name="id" value={recipe.id} />
-              <input type="hidden" name="currentPhotoUrl" value={recipe.photoUrl ?? ""} />
-              <Field label="Nome do drink" name="drinkName" defaultValue={recipe.drinkName} />
-              <Field label="Trocar foto" name="photo" type="file" required={false} />
-              <div className="md:col-span-2">
-                <RecipeIngredientPicker products={products} initialIngredients={recipe.ingredients} compact />
-              </div>
-              <div className="space-y-2 md:col-span-2"><Label>Modo de preparo</Label><Textarea name="preparation" defaultValue={recipe.preparation} required className="min-h-28" /></div>
-              <Field label="Copo utilizado" name="glass" defaultValue={recipe.glass} />
-              <Field label="Guarnição" name="garnish" defaultValue={recipe.garnish ?? ""} required={false} />
-              <div className="space-y-2 md:col-span-2"><Label>Observações</Label><Textarea name="notes" defaultValue={recipe.notes ?? ""} className="min-h-20" /></div>
-              <div className="flex justify-end md:col-span-2">
-                <Button type="submit" size="sm"><Save className="size-4" />Salvar</Button>
-              </div>
-            </form>
-            <form action={deleteRecipeAction} onSubmit={() => setDialogOpen(false)} className="mt-3 border-t pt-3">
-              <input type="hidden" name="id" value={recipe.id} />
-              {confirmingDelete ? (
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm text-destructive">Confirmar exclusao desta ficha?</p>
-                  <div className="flex gap-2">
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingDelete(false)}>Cancelar</Button>
-                    <Button type="submit" size="sm" variant="destructive"><Trash2 className="size-4" />Confirmar exclusao</Button>
-                  </div>
-                </div>
-              ) : (
-                <Button type="button" size="sm" variant="destructive" onClick={() => setConfirmingDelete(true)}><Trash2 className="size-4" />Excluir</Button>
-              )}
-            </form>
+            {isPending && <p className="py-10 text-center text-sm text-muted-foreground">Carregando ficha...</p>}
+            {error && <p className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
+            {data && <RecipeEditor recipe={data.recipe} products={data.products} onClose={() => setOpen(false)} confirmingDelete={confirmingDelete} setConfirmingDelete={setConfirmingDelete} />}
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+function RecipeEditor({ recipe, products, onClose, confirmingDelete, setConfirmingDelete }: EditorData & { onClose: () => void; confirmingDelete: boolean; setConfirmingDelete: (value: boolean) => void }) {
+  return (
+    <>
+      {recipe.photoUrl ? (
+        <a href={recipe.photoUrl} target="_blank" rel="noreferrer" className="relative mb-4 block h-32 overflow-hidden rounded-md bg-muted" aria-label={`Abrir foto de ${recipe.drinkName} em tamanho ampliado`}>
+          <Image src={recipe.photoUrl} alt={recipe.drinkName} fill sizes="320px" className="object-contain p-1" />
+        </a>
+      ) : null}
+      <form action={updateRecipeAction} onSubmit={onClose} className="grid gap-3 md:grid-cols-2">
+        <input type="hidden" name="id" value={recipe.id} />
+        <input type="hidden" name="currentPhotoUrl" value={recipe.photoUrl ?? ""} />
+        <Field label="Nome do drink" name="drinkName" defaultValue={recipe.drinkName} />
+        <Field label="Trocar foto" name="photo" type="file" required={false} />
+        <div className="md:col-span-2">
+          <RecipeIngredientPicker products={products} initialIngredients={recipe.ingredients} compact />
+        </div>
+        <div className="space-y-2 md:col-span-2"><Label>Modo de preparo</Label><Textarea name="preparation" defaultValue={recipe.preparation} required className="min-h-28" /></div>
+        <Field label="Copo utilizado" name="glass" defaultValue={recipe.glass} />
+        <Field label="Guarnição" name="garnish" defaultValue={recipe.garnish ?? ""} required={false} />
+        <div className="space-y-2 md:col-span-2"><Label>Observações</Label><Textarea name="notes" defaultValue={recipe.notes ?? ""} className="min-h-20" /></div>
+        <div className="flex justify-end md:col-span-2">
+          <Button type="submit" size="sm"><Save className="size-4" />Salvar</Button>
+        </div>
+      </form>
+      <form action={deleteRecipeAction} onSubmit={onClose} className="mt-3 border-t pt-3">
+        <input type="hidden" name="id" value={recipe.id} />
+        {confirmingDelete ? (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-destructive">Confirmar exclusão desta ficha?</p>
+            <div className="flex gap-2">
+              <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmingDelete(false)}>Cancelar</Button>
+              <Button type="submit" size="sm" variant="destructive"><Trash2 className="size-4" />Confirmar exclusão</Button>
+            </div>
+          </div>
+        ) : (
+          <Button type="button" size="sm" variant="destructive" onClick={() => setConfirmingDelete(true)}><Trash2 className="size-4" />Excluir</Button>
+        )}
+      </form>
     </>
   );
 }

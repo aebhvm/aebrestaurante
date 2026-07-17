@@ -2,10 +2,10 @@
 
 import bcrypt from "bcryptjs";
 import { put } from "@vercel/blob";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq, inArray } from "drizzle-orm";
-import { db, requireDb } from "@/db";
+import { hasDatabase, requireDb } from "@/db";
 import { appSettings, auditLogs, barRecipes, breaks, news, newsRecipients, shifts, stations, stockProducts, stockRequests, tasks, users } from "@/db/schema";
 import { clearSession, getSession, setSession } from "@/lib/session";
 import { dashboardForRole } from "@/lib/permissions";
@@ -64,7 +64,7 @@ export async function loginAction(_: unknown, formData: FormData) {
   });
   if (!parsed.success) return { error: "Informe usuário e senha válidos." };
 
-  if (!db && parsed.data.password === "Senha@123") {
+  if (!hasDatabase && parsed.data.password === "Senha@123") {
     const demo = demoUsers.find((item) => item.username === parsed.data.username.toLowerCase());
     if (demo) {
       await setSession({ id: demo.id, name: demo.name, username: demo.username, role: demo.role });
@@ -188,6 +188,7 @@ export async function updateLoginSettingsAction(formData: FormData) {
     ? await database.update(appSettings).set({ ...parsed.data, loginLogoUrl, updatedAt: new Date() }).where(eq(appSettings.id, existing.id)).returning()
     : await database.insert(appSettings).values({ ...parsed.data, loginLogoUrl, createdBy: session.id }).returning();
   await audit("app_settings", saved.id, existing ? "update" : "create", session.id);
+  revalidateTag("login-settings");
   revalidatePath("/login");
   revalidatePath("/usuarios");
   goToUsersWith("Tela de login atualizada com sucesso.", "ok");
@@ -279,6 +280,7 @@ export async function createStockProductAction(formData: FormData) {
   });
   const [created] = await requireDb().insert(stockProducts).values({ ...parsed, createdBy: session.id }).returning();
   await audit("stock_product", created.id, "create", session.id, created.unit);
+  revalidateTag("stock-products");
   revalidatePath("/estoque");
   revalidatePath("/pedidos");
 }
@@ -298,6 +300,7 @@ export async function updateStockProductAction(formData: FormData) {
   if (duplicate && duplicate.id !== parsed.data.id) redirect(`/estoque?date=${date}&erro=Já existe outro produto com esse nome.`);
   await database.update(stockProducts).set({ name: parsed.data.name, unit: parsed.data.unit, active: parsed.data.active, updatedAt: new Date() }).where(eq(stockProducts.id, parsed.data.id));
   await audit("stock_product", parsed.data.id, "update", session.id, parsed.data.active ? "ativo" : "inativo");
+  revalidateTag("stock-products");
   revalidatePath("/estoque");
   revalidatePath("/pedidos");
   revalidatePath("/fichas");
@@ -312,6 +315,7 @@ export async function deleteStockProductAction(formData: FormData) {
   const database = requireDb();
   await database.delete(stockProducts).where(eq(stockProducts.id, id));
   await audit("stock_product", id, "delete", session.id);
+  revalidateTag("stock-products");
   revalidatePath("/estoque");
   revalidatePath("/pedidos");
   revalidatePath("/fichas");
@@ -387,6 +391,20 @@ async function collectRecipeIngredients(formData: FormData) {
   });
 }
 
+export async function getRecipeEditorDataAction(id: number) {
+  await requireUser(["gestor", "barman"]);
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Ficha inválida.");
+
+  const database = requireDb();
+  const [recipe, products] = await Promise.all([
+    database.query.barRecipes.findFirst({ where: eq(barRecipes.id, id) }),
+    database.query.stockProducts.findMany({ where: eq(stockProducts.active, true), orderBy: [stockProducts.name] })
+  ]);
+  if (!recipe) throw new Error("Ficha não encontrada.");
+
+  return { recipe, products: products.map((product) => ({ id: product.id, name: product.name })) };
+}
+
 export async function createRecipeAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const parsed = recipeSchema.safeParse({
@@ -403,6 +421,7 @@ export async function createRecipeAction(formData: FormData) {
   if (!ingredients.length) redirect("/fichas?erro=Adicione ao menos um ingrediente cadastrado no estoque.");
   const [created] = await requireDb().insert(barRecipes).values({ ...parsed.data, category: "Bar", photoUrl, ingredients, createdBy: session.id }).returning();
   await audit("recipe", created.id, "create", session.id, "Bar");
+  revalidateTag("recipes");
   revalidatePath("/fichas");
   redirect("/fichas?ok=Ficha tecnica salva com sucesso.");
 }
@@ -432,6 +451,7 @@ export async function updateRecipeAction(formData: FormData) {
 
   await requireDb().update(barRecipes).set({ ...parsed.data, photoUrl, ingredients, updatedAt: new Date() }).where(eq(barRecipes.id, id));
   await audit("recipe", id, "update", session.id, "Bar");
+  revalidateTag("recipes");
   revalidatePath("/fichas");
   redirect("/fichas?ok=Ficha atualizada com sucesso.");
 }
@@ -441,6 +461,7 @@ export async function deleteRecipeAction(formData: FormData) {
   const id = Number(requireField(formData, "id"));
   if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha invalida.");
   await audit("recipe", id, "delete", session.id);
+  revalidateTag("recipes");
   await requireDb().delete(barRecipes).where(eq(barRecipes.id, id));
   revalidatePath("/fichas");
   redirect("/fichas?ok=Ficha excluida com sucesso.");

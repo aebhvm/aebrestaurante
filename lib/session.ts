@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { cookieName, createSessionToken, verifySessionToken, type SessionUser } from "@/lib/session-core";
 
-export async function getSession() {
+export const getSession = cache(async () => {
   const store = await cookies();
   return verifySessionToken(store.get(cookieName)?.value);
-}
+});
 
 export async function setSession(user: SessionUser) {
   const store = await cookies();

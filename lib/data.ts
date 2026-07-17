@@ -1,5 +1,6 @@
 import { and, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { unstable_cache } from "next/cache";
+import { hasDatabase, requireDb } from "@/db";
 import {
   auditLogs,
   appSettings,
@@ -18,20 +19,45 @@ import { demoBreaks, demoLoginSettings, demoNews, demoRecipes, demoShifts, demoS
 import type { SessionUser } from "@/lib/session";
 import { isTaskOverdue, todayISO } from "@/lib/utils";
 
+
 type Filters = { date?: string; userId?: number; status?: string; type?: string; q?: string };
 
+const getCachedLoginSettings = unstable_cache(
+  async () => (await requireDb().query.appSettings.findFirst({ orderBy: [desc(appSettings.updatedAt)] })) ?? demoLoginSettings,
+  ["login-settings"],
+  { revalidate: 300, tags: ["login-settings"] }
+);
+
+const getCachedRecipes = unstable_cache(
+  async (query: string) => requireDb().query.barRecipes.findMany({
+    where: query ? ilike(barRecipes.drinkName, `%${query}%`) : undefined,
+    orderBy: [barRecipes.drinkName]
+  }),
+  ["recipes"],
+  { revalidate: 60, tags: ["recipes"] }
+);
+
+const getCachedStockProducts = unstable_cache(
+  async (activeOnly: boolean) => requireDb().query.stockProducts.findMany({
+    where: activeOnly ? eq(stockProducts.active, true) : undefined,
+    orderBy: [stockProducts.name]
+  }),
+  ["stock-products"],
+  { revalidate: 60, tags: ["stock-products"] }
+);
+
 export async function getUsers() {
-  if (!db) return demoUsers;
-  return db.query.users.findMany({ orderBy: [desc(users.createdAt)] });
+  if (!hasDatabase) return demoUsers;
+  return requireDb().query.users.findMany({ orderBy: [desc(users.createdAt)] });
 }
 
 export async function getLoginSettings() {
-  if (!db) return demoLoginSettings;
-  return (await db.query.appSettings.findFirst({ orderBy: [desc(appSettings.updatedAt)] })) ?? demoLoginSettings;
+  if (!hasDatabase) return demoLoginSettings;
+  return getCachedLoginSettings();
 }
 
 export async function getManagerDashboard(date = todayISO()) {
-  if (!db) {
+  if (!hasDatabase) {
     const dayTasks = demoTasks.filter((task) => task.taskDate === date);
     return {
       pendingTasks: dayTasks.filter((task) => task.status === "pendente" && !isTaskOverdue(task.taskDate, task.taskTime)).length,
@@ -44,10 +70,10 @@ export async function getManagerDashboard(date = todayISO()) {
   }
 
   const [dayTasks, pendingOrders, todaysShifts, todaysBreaks] = await Promise.all([
-    db.query.tasks.findMany({ where: eq(tasks.taskDate, date) }),
-    db.select({ value: sql<number>`count(distinct coalesce(${stockRequests.orderNumber}, ${stockRequests.id}::text))::int` }).from(stockRequests).where(and(eq(stockRequests.status, "solicitado"), eq(stockRequests.requestDate, date))),
-    db.query.shifts.findMany({ where: eq(shifts.shiftDate, date), with: { waiter: true, bartender: true, station: true }, orderBy: [shifts.shiftDate] }),
-    db.query.breaks.findMany({ where: eq(breaks.breakDate, date), with: { waiter: true, bartender: true }, orderBy: [breaks.startsAt] })
+    requireDb().query.tasks.findMany({ where: eq(tasks.taskDate, date) }),
+    requireDb().select({ value: sql<number>`count(distinct coalesce(${stockRequests.orderNumber}, ${stockRequests.id}::text))::int` }).from(stockRequests).where(and(eq(stockRequests.status, "solicitado"), eq(stockRequests.requestDate, date))),
+    requireDb().query.shifts.findMany({ where: eq(shifts.shiftDate, date), with: { waiter: true, bartender: true, station: true }, orderBy: [shifts.shiftDate] }),
+    requireDb().query.breaks.findMany({ where: eq(breaks.breakDate, date), with: { waiter: true, bartender: true }, orderBy: [breaks.startsAt] })
   ]);
 
   return {
@@ -61,7 +87,7 @@ export async function getManagerDashboard(date = todayISO()) {
 }
 
 export async function getTasks(session: SessionUser, filters: Filters = {}) {
-  if (!db) {
+  if (!hasDatabase) {
     return demoTasks.filter((task) =>
       (session.role === "gestor" || task.responsibleId === session.id) &&
       (!filters.date || task.taskDate === filters.date) &&
@@ -75,7 +101,7 @@ export async function getTasks(session: SessionUser, filters: Filters = {}) {
     filters.status ? eq(tasks.status, filters.status as "pendente" | "concluido") : undefined
   ].filter(Boolean);
 
-  return db.query.tasks.findMany({
+  return requireDb().query.tasks.findMany({
     where: conditions.length ? and(...conditions) : undefined,
     with: { responsible: true },
     orderBy: [desc(tasks.taskDate), desc(tasks.createdAt)]
@@ -83,44 +109,41 @@ export async function getTasks(session: SessionUser, filters: Filters = {}) {
 }
 
 export async function getStations(session: SessionUser, filters: Filters = {}) {
-  if (!db) return demoStations.filter((item) => (session.role === "gestor" || item.responsibleId === session.id) && (!filters.date || item.stationDate === filters.date));
+  if (!hasDatabase) return demoStations.filter((item) => (session.role === "gestor" || item.responsibleId === session.id) && (!filters.date || item.stationDate === filters.date));
   const conditions = [
     session.role === "gestor" ? undefined : eq(stations.responsibleId, session.id),
     filters.date ? eq(stations.stationDate, filters.date) : undefined
   ].filter(Boolean);
-  return db.query.stations.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { responsible: true }, orderBy: [desc(stations.stationDate)] });
+  return requireDb().query.stations.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { responsible: true }, orderBy: [desc(stations.stationDate)] });
 }
 
 export async function getStationCatalog() {
-  if (!db) return demoStations;
-  const rows = await db.query.stations.findMany({ orderBy: [stations.name] });
+  if (!hasDatabase) return demoStations;
+  const rows = await requireDb().query.stations.findMany({ orderBy: [stations.name] });
   return rows.filter((station, index) => rows.findIndex((item) => item.name.toLowerCase() === station.name.toLowerCase()) === index);
 }
 
 export async function getShifts(session: SessionUser, filters: Filters = {}) {
-  if (!db) return demoShifts.filter((item) => (session.role === "gestor" || item.waiter?.id === session.id || item.bartender?.id === session.id) && (!filters.date || item.shiftDate === filters.date));
+  if (!hasDatabase) return demoShifts.filter((item) => (session.role === "gestor" || item.waiter?.id === session.id || item.bartender?.id === session.id) && (!filters.date || item.shiftDate === filters.date));
   const own = session.role === "gestor" ? undefined : or(eq(shifts.waiterId, session.id), eq(shifts.bartenderId, session.id));
   const conditions = [own, filters.date ? eq(shifts.shiftDate, filters.date) : undefined].filter(Boolean);
-  return db.query.shifts.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { waiter: true, bartender: true, station: true }, orderBy: [desc(shifts.shiftDate)] });
+  return requireDb().query.shifts.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { waiter: true, bartender: true, station: true }, orderBy: [desc(shifts.shiftDate)] });
 }
 
 export async function getBreaks(session: SessionUser, filters: Filters = {}) {
-  if (!db) return demoBreaks.filter((item) => (session.role === "gestor" || item.waiter?.id === session.id || item.bartender?.id === session.id) && (!filters.date || item.breakDate === filters.date));
+  if (!hasDatabase) return demoBreaks.filter((item) => (session.role === "gestor" || item.waiter?.id === session.id || item.bartender?.id === session.id) && (!filters.date || item.breakDate === filters.date));
   const own = session.role === "gestor" ? undefined : or(eq(breaks.waiterId, session.id), eq(breaks.bartenderId, session.id));
   const conditions = [own, filters.date ? eq(breaks.breakDate, filters.date) : undefined].filter(Boolean);
-  return db.query.breaks.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { waiter: true, bartender: true }, orderBy: [desc(breaks.breakDate)] });
+  return requireDb().query.breaks.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { waiter: true, bartender: true }, orderBy: [desc(breaks.breakDate)] });
 }
 
 export async function getRecipes(q?: string) {
-  if (!db) return demoRecipes.filter((item) => !q || item.drinkName.toLowerCase().includes(q.toLowerCase()));
-  return db.query.barRecipes.findMany({
-    where: q ? ilike(barRecipes.drinkName, `%${q}%`) : undefined,
-    orderBy: [barRecipes.drinkName]
-  });
+  if (!hasDatabase) return demoRecipes.filter((item) => !q || item.drinkName.toLowerCase().includes(q.toLowerCase()));
+  return getCachedRecipes(q?.trim() ?? "");
 }
 
 export async function getStockRequests(session: SessionUser, filters: Filters = {}) {
-  if (!db) {
+  if (!hasDatabase) {
     return demoStockRequests.filter((item) =>
       (["gestor", "estoquista"].includes(session.role) || item.requesterId === session.id) &&
       (!filters.date || item.requestDate === filters.date) &&
@@ -132,20 +155,17 @@ export async function getStockRequests(session: SessionUser, filters: Filters = 
     filters.date ? eq(stockRequests.requestDate, filters.date) : undefined,
     filters.status ? eq(stockRequests.status, filters.status as "solicitado" | "separado" | "entregue") : undefined
   ].filter(Boolean);
-  return db.query.stockRequests.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { requester: true, productRecord: true }, orderBy: [desc(stockRequests.createdAt)] });
+  return requireDb().query.stockRequests.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { requester: true, productRecord: true }, orderBy: [desc(stockRequests.createdAt)] });
 }
 
 export async function getStockProducts(activeOnly = false) {
-  if (!db) return activeOnly ? demoStockProducts.filter((item) => item.active) : demoStockProducts;
-  return db.query.stockProducts.findMany({
-    where: activeOnly ? eq(stockProducts.active, true) : undefined,
-    orderBy: [stockProducts.name]
-  });
+  if (!hasDatabase) return activeOnly ? demoStockProducts.filter((item) => item.active) : demoStockProducts;
+  return getCachedStockProducts(activeOnly);
 }
 
 export async function getNewsForUser(session: SessionUser, date = todayISO()) {
-  if (!db) return demoNews;
-  const rows = await db.query.news.findMany({
+  if (!hasDatabase) return demoNews;
+  const rows = await requireDb().query.news.findMany({
     where: and(
       lte(news.publishedAt, date),
       gte(news.expiresAt, date),
@@ -167,8 +187,8 @@ export async function getNewsForUser(session: SessionUser, date = todayISO()) {
 }
 
 export async function getActiveNewsForManager(date = todayISO()) {
-  if (!db) return demoNews;
-  return db.query.news.findMany({
+  if (!hasDatabase) return demoNews;
+  return requireDb().query.news.findMany({
     where: gte(news.expiresAt, date),
     with: { recipients: { with: { user: true } } },
     orderBy: [desc(news.publishedAt), desc(news.createdAt)]
@@ -176,12 +196,12 @@ export async function getActiveNewsForManager(date = todayISO()) {
 }
 
 export async function getAuditLogs(filters: Filters = {}) {
-  if (!db) return [];
+  if (!hasDatabase) return [];
   const conditions = [
     filters.userId ? eq(auditLogs.actorId, filters.userId) : undefined,
     filters.type ? eq(auditLogs.entity, filters.type as never) : undefined,
     filters.status ? eq(auditLogs.status, filters.status) : undefined,
     filters.date ? sql`date(${auditLogs.occurredAt}) = ${filters.date}` : undefined
   ].filter(Boolean);
-  return db.query.auditLogs.findMany({ where: conditions.length ? and(...conditions) : undefined, orderBy: [desc(auditLogs.occurredAt)], limit: 100 });
+  return requireDb().query.auditLogs.findMany({ where: conditions.length ? and(...conditions) : undefined, orderBy: [desc(auditLogs.occurredAt)], limit: 100 });
 }
