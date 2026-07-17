@@ -64,8 +64,7 @@ export const updateShiftSchema = shiftSchema.extend({
 export const breakSchema = z.object({
   employeeId: z.coerce.number().int().positive(),
   breakDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  startsAt: z.string().regex(/^\d{2}:\d{2}$/),
-  endsAt: z.string().regex(/^\d{2}:\d{2}$/)
+  startsAt: z.string().regex(/^\d{2}:\d{2}$/)
 });
 
 export const updateBreakSchema = breakSchema.extend({

@@ -33,6 +33,12 @@ function requireField(formData: FormData, field: string) {
   return String(formData.get(field) ?? "");
 }
 
+function oneHourAfter(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  const totalMinutes = (hours * 60 + minutes + 60) % (24 * 60);
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(totalMinutes % 60).padStart(2, "0")}`;
+}
+
 async function uploadPublicFile(file: File, folder: string) {
   if (process.env.BLOB_READ_WRITE_TOKEN) {
     return (await put(`${folder}/${Date.now()}-${file.name}`, file, { access: "public" })).url;
@@ -552,8 +558,7 @@ export async function createBreakAction(formData: FormData) {
   const parsed = breakSchema.parse({
     employeeId: requireField(formData, "employeeId"),
     breakDate: requireField(formData, "breakDate") || todayISO(),
-    startsAt: requireField(formData, "startsAt"),
-    endsAt: requireField(formData, "endsAt")
+    startsAt: requireField(formData, "startsAt")
   });
   const employee = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.employeeId) });
   if (!employee || !employee.active || !["garcom", "barman"].includes(employee.role)) redirect("/descansos?erro=Funcionário inválido.");
@@ -562,7 +567,7 @@ export async function createBreakAction(formData: FormData) {
     bartenderId: employee.role === "barman" ? employee.id : null,
     breakDate: parsed.breakDate,
     startsAt: parsed.startsAt,
-    endsAt: parsed.endsAt,
+    endsAt: oneHourAfter(parsed.startsAt),
     createdBy: session.id
   });
   revalidatePath("/descansos");
@@ -577,8 +582,7 @@ export async function updateBreakAction(formData: FormData) {
     id: requireField(formData, "id"),
     employeeId: requireField(formData, "employeeId"),
     breakDate: requireField(formData, "breakDate"),
-    startsAt: requireField(formData, "startsAt"),
-    endsAt: requireField(formData, "endsAt")
+    startsAt: requireField(formData, "startsAt")
   });
   if (!parsed.success) redirect("/descansos?erro=Revise os dados do descanso.");
   const employee = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.data.employeeId) });
@@ -590,7 +594,7 @@ export async function updateBreakAction(formData: FormData) {
     bartenderId: employee.role === "barman" ? employee.id : null,
     breakDate: parsed.data.breakDate,
     startsAt: parsed.data.startsAt,
-    endsAt: parsed.data.endsAt,
+    endsAt: oneHourAfter(parsed.data.startsAt),
     updatedAt: new Date()
   }).where(eq(breaks.id, parsed.data.id));
   revalidatePath("/descansos");
