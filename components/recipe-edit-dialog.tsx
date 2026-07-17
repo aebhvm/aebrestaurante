@@ -23,20 +23,40 @@ type EditableRecipe = {
   notes?: string | null;
 };
 
-export function RecipeEditDialog({ recipe, products }: { recipe: EditableRecipe; products: Product[] }) {
-  const [open, setOpen] = useState(false);
+export function RecipeEditDialog({
+  recipe,
+  products,
+  open,
+  onOpenChange
+}: {
+  recipe: EditableRecipe;
+  products: Product[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const isControlled = open !== undefined;
+  const dialogOpen = open ?? internalOpen;
+
+  function setDialogOpen(nextOpen: boolean) {
+    if (nextOpen) setConfirmingDelete(false);
+    if (isControlled) {
+      onOpenChange?.(nextOpen);
+      return;
+    }
+    setInternalOpen(nextOpen);
+  }
 
   return (
     <>
-      <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-primary" onClick={() => {
-        setConfirmingDelete(false);
-        setOpen(true);
-      }}>
-        <Pencil className="size-4" />
-        Editar
-      </Button>
-      {open && (
+      {!isControlled ? (
+        <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-primary" onClick={() => setDialogOpen(true)}>
+          <Pencil className="size-4" />
+          Editar
+        </Button>
+      ) : null}
+      {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-label={`Editar ${recipe.drinkName}`}>
           <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-lg border bg-card p-4 shadow-xl">
             <div className="mb-4 flex items-start justify-between gap-3 border-b pb-3">
@@ -44,12 +64,12 @@ export function RecipeEditDialog({ recipe, products }: { recipe: EditableRecipe;
                 <h2 className="text-lg font-semibold">Editar ficha</h2>
                 <p className="text-sm text-muted-foreground">{recipe.drinkName}</p>
               </div>
-              <Button type="button" size="icon" variant="ghost" aria-label="Fechar" onClick={() => setOpen(false)}>
+              <Button type="button" size="icon" variant="ghost" aria-label="Fechar" onClick={() => setDialogOpen(false)}>
                 <X className="size-4" />
               </Button>
             </div>
             {recipe.photoUrl ? <RecipePhoto src={recipe.photoUrl} alt={recipe.drinkName} className="mb-4 h-32 rounded-md" sizes="320px" /> : null}
-            <form action={updateRecipeAction} onSubmit={() => setOpen(false)} className="grid gap-3 md:grid-cols-2">
+            <form action={updateRecipeAction} onSubmit={() => setDialogOpen(false)} className="grid gap-3 md:grid-cols-2">
               <input type="hidden" name="id" value={recipe.id} />
               <input type="hidden" name="currentPhotoUrl" value={recipe.photoUrl ?? ""} />
               <Field label="Nome do drink" name="drinkName" defaultValue={recipe.drinkName} />
@@ -65,7 +85,7 @@ export function RecipeEditDialog({ recipe, products }: { recipe: EditableRecipe;
                 <Button type="submit" size="sm"><Save className="size-4" />Salvar</Button>
               </div>
             </form>
-            <form action={deleteRecipeAction} onSubmit={() => setOpen(false)} className="mt-3 border-t pt-3">
+            <form action={deleteRecipeAction} onSubmit={() => setDialogOpen(false)} className="mt-3 border-t pt-3">
               <input type="hidden" name="id" value={recipe.id} />
               {confirmingDelete ? (
                 <div className="flex flex-wrap items-center justify-between gap-2">
