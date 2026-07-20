@@ -76,8 +76,8 @@ function BreakForm({ employees, date, breakItem }: { employees: Employee[]; date
       {breakItem && <input type="hidden" name="id" value={breakItem.id} />}
       <div className="space-y-2"><Label>Funcionário</Label><NativeSelect name="employeeId" defaultValue={employeeId ?? ""} required>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.name}</option>)}</NativeSelect></div>
       <div className="space-y-2"><Label>Data</Label><Input name="breakDate" type="date" defaultValue={breakItem?.breakDate ?? date} required /></div>
-      <div className="space-y-2"><Label>Inicio</Label><Input name="startsAt" type="time" defaultValue={breakItem?.startsAt} required /></div>
-      <p className="text-xs text-muted-foreground">O descanso termina automaticamente uma hora apos o inicio.</p>
+      <div className="space-y-2"><Label>Início</Label><Input name="startsAt" type="time" defaultValue={breakItem?.startsAt} required /></div>
+      <p className="text-xs text-muted-foreground">O descanso termina automaticamente uma hora após o início.</p>
       <Button className="w-full" size={breakItem ? "sm" : "default"} disabled={!employees.length}>Salvar</Button>
     </form>
   );
