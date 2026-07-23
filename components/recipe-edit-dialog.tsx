@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Pencil, Save, Trash2, X } from "lucide-react";
 import { deleteRecipeAction, getRecipeEditorDataAction, updateRecipeAction } from "@/app/actions";
 import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
@@ -12,16 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 
 type EditorData = Awaited<ReturnType<typeof getRecipeEditorDataAction>>;
 
-export function RecipeEditDialog({ recipeId, drinkName }: { recipeId: number; drinkName: string }) {
-  const [open, setOpen] = useState(false);
+export function RecipeEditDialog({ recipeId, drinkName, defaultOpen = false }: { recipeId: number; drinkName: string; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const [data, setData] = useState<EditorData | null>(null);
   const [error, setError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  function openDialog() {
-    setOpen(true);
-    setConfirmingDelete(false);
+  const loadEditor = useCallback(() => {
     if (data) return;
     setError("");
     startTransition(async () => {
@@ -31,6 +29,16 @@ export function RecipeEditDialog({ recipeId, drinkName }: { recipeId: number; dr
         setError("Não foi possível carregar esta ficha. Feche e tente novamente.");
       }
     });
+  }, [data, recipeId, startTransition]);
+
+  useEffect(() => {
+    if (defaultOpen) loadEditor();
+  }, [defaultOpen, loadEditor]);
+
+  function openDialog() {
+    setOpen(true);
+    setConfirmingDelete(false);
+    loadEditor();
   }
 
   return (

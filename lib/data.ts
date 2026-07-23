@@ -21,6 +21,20 @@ import { isTaskOverdue, todayISO } from "@/lib/utils";
 
 
 type Filters = { date?: string; userId?: number; status?: string; type?: string; q?: string };
+const recipesPerPage = 24;
+
+type RecipeCard = {
+  id: number;
+  drinkName: string;
+  photoPath: string | null;
+  ingredients: Array<{ item: string; amount: string }>;
+  ingredientCount: number;
+  preparation: string;
+  glass: string;
+  garnish: string | null;
+};
+
+type RecipePage = { recipes: RecipeCard[]; hasNext: boolean };
 
 const getCachedLoginSettings = unstable_cache(
   async () => (await requireDb().query.appSettings.findFirst({ orderBy: [desc(appSettings.updatedAt)] })) ?? demoLoginSettings,
@@ -29,12 +43,39 @@ const getCachedLoginSettings = unstable_cache(
 );
 
 const getCachedRecipes = unstable_cache(
-  async (query: string) => requireDb().query.barRecipes.findMany({
-    where: query ? ilike(barRecipes.drinkName, `%${query}%`) : undefined,
-    orderBy: [barRecipes.drinkName]
-  }),
+  async (query: string, page: number): Promise<RecipePage> => {
+    const rows = await requireDb().query.barRecipes.findMany({
+      columns: {
+        id: true,
+        drinkName: true,
+        photoUrl: true,
+        ingredients: true,
+        preparation: true,
+        glass: true,
+        garnish: true
+      },
+      where: query ? ilike(barRecipes.drinkName, `%${query}%`) : undefined,
+      orderBy: [barRecipes.drinkName, barRecipes.id],
+      limit: recipesPerPage + 1,
+      offset: (page - 1) * recipesPerPage
+    });
+
+    return {
+      hasNext: rows.length > recipesPerPage,
+      recipes: rows.slice(0, recipesPerPage).map((recipe) => ({
+        id: recipe.id,
+        drinkName: recipe.drinkName,
+        photoPath: recipe.photoUrl ? `/api/fichas/${recipe.id}/photo` : null,
+        ingredients: recipe.ingredients.slice(0, 4).map(({ item, amount }) => ({ item, amount })),
+        ingredientCount: recipe.ingredients.length,
+        preparation: recipe.preparation.slice(0, 240),
+        glass: recipe.glass,
+        garnish: recipe.garnish
+      }))
+    };
+  },
   ["recipes"],
-  { revalidate: 60, tags: ["recipes"] }
+  { revalidate: 300, tags: ["recipes"] }
 );
 
 const getCachedStockProducts = unstable_cache(
@@ -137,9 +178,29 @@ export async function getBreaks(session: SessionUser, filters: Filters = {}) {
   return requireDb().query.breaks.findMany({ where: conditions.length ? and(...conditions) : undefined, with: { waiter: true, bartender: true }, orderBy: [desc(breaks.breakDate)] });
 }
 
-export async function getRecipes(q?: string) {
-  if (!hasDatabase) return demoRecipes.filter((item) => !q || item.drinkName.toLowerCase().includes(q.toLowerCase()));
-  return getCachedRecipes(q?.trim() ?? "");
+export async function getRecipes(q?: string, page = 1): Promise<RecipePage> {
+  const query = q?.trim() ?? "";
+  const normalizedPage = Math.max(1, page);
+
+  if (!hasDatabase) {
+    const rows = demoRecipes.filter((item) => !query || item.drinkName.toLowerCase().includes(query.toLowerCase()));
+    const start = (normalizedPage - 1) * recipesPerPage;
+    return {
+      hasNext: rows.length > start + recipesPerPage,
+      recipes: rows.slice(start, start + recipesPerPage).map((recipe) => ({
+        id: recipe.id,
+        drinkName: recipe.drinkName,
+        photoPath: recipe.photoUrl ? `/api/fichas/${recipe.id}/photo` : null,
+        ingredients: recipe.ingredients.slice(0, 4).map(({ item, amount }) => ({ item, amount })),
+        ingredientCount: recipe.ingredients.length,
+        preparation: recipe.preparation.slice(0, 240),
+        glass: recipe.glass,
+        garnish: recipe.garnish ?? null
+      }))
+    };
+  }
+
+  return getCachedRecipes(query, normalizedPage);
 }
 
 export async function getStockRequests(session: SessionUser, filters: Filters = {}) {

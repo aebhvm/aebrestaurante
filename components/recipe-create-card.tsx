@@ -1,13 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { createRecipeAction } from "@/app/actions";
-import { RecipeIngredientPicker } from "@/components/recipe-ingredient-picker";
 import { useRecipeProducts } from "@/components/use-recipe-products";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+
+const RecipeIngredientPicker = dynamic(
+  () => import("@/components/recipe-ingredient-picker").then((module) => module.RecipeIngredientPicker),
+  { loading: () => <p className="rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">Carregando seletor...</p> }
+);
 
 export function RecipeCreateCard() {
   const { products, loading, error, ensureProducts } = useRecipeProducts();
