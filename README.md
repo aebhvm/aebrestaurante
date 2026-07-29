@@ -1,6 +1,6 @@
 # AEB Restaurante
 
-Aplicacao Next.js para operacao do restaurante, com autenticacao, perfis de acesso, fichas tecnicas, escalas, descansos, tarefas, noticias e estoque.
+Aplicação Next.js para operação do restaurante, com autenticação, perfis de acesso, fichas técnicas, escalas, descansos, tarefas, notícias e estoque.
 
 ## Organizacao
 
@@ -10,15 +10,15 @@ Aplicacao Next.js para operacao do restaurante, com autenticacao, perfis de aces
 - `lib/`: acesso a dados, sessao, permissoes, validadores e utilitarios.
 - `public/`: arquivos publicos estaticos.
 
-As rotas de negocio ficam agrupadas em `app/(app)/`; arquivos de API seguem em `app/api/`. Os nomes de arquivos e pastas usam kebab-case.
+As rotas de negócio ficam agrupadas em `app/(app)/`; arquivos de API seguem em `app/api/`. Os nomes de arquivos e pastas usam kebab-case.
 
-## Configuracao
+## Configuração
 
 1. Copie `.env.example` para `.env.local`.
 2. Defina `DATABASE_URL`, `AUTH_SECRET` com pelo menos 32 caracteres e o token do Blob quando houver upload externo.
 3. Para executar o seed, defina `SEED_PASSWORD` com pelo menos 12 caracteres e rode `npm run db:seed`.
 
-Nunca coloque valores reais de banco, tokens ou senhas no repositorio.
+Nunca coloque valores reais de banco, tokens ou senhas no repositório.
 
 ## Comandos
 
@@ -28,6 +28,6 @@ Nunca coloque valores reais de banco, tokens ou senhas no repositorio.
 - `npx tsc --noEmit`: verificacao de tipos.
 - `npm run db:migrate`: aplica migracoes.
 
-## Seguranca
+## Segurança
 
-As mutacoes validam os dados no servidor e exigem sessao com o perfil autorizado. Em producao, a aplicacao exige um segredo de sessao forte, desabilita o login demo e envia cabecalhos HTTP de protecao. O seed recebe a senha por variavel de ambiente e nao a imprime nos logs.
+As mutações validam os dados no servidor e exigem sessão com o perfil autorizado. Em produção, a aplicação exige um segredo de sessão forte, desabilita o login demo e envia cabeçalhos HTTP de proteção. O seed recebe a senha por variável de ambiente e não a imprime nos logs.

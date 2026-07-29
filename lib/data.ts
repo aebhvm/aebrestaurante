@@ -35,8 +35,24 @@ type RecipeCard = {
 
 type RecipePage = { recipes: RecipeCard[]; hasNext: boolean };
 
+function normalizeLoginSettings<T extends { loginTitle: string; loginSubtitle: string }>(settings: T): T {
+  return {
+    ...settings,
+    loginTitle: settings.loginTitle === "Operacao do restaurante em tempo real."
+      ? "Operação do restaurante em tempo real."
+      : settings.loginTitle === "Gestao precisa para salao, bar e estoque."
+        ? "Gestão precisa para salão, bar e estoque."
+        : settings.loginTitle,
+    loginSubtitle: settings.loginSubtitle === "Acesse tarefas, pracas, escalas, descansos e pedidos de estoque com seguranca."
+      ? "Acesse tarefas, praças, escalas, descansos e pedidos de estoque com segurança."
+      : settings.loginSubtitle === "Controle tarefas, escalas, pracas, fichas tecnicas, noticias e pedidos de estoque."
+        ? "Controle tarefas, escalas, praças, fichas técnicas, notícias e pedidos de estoque."
+        : settings.loginSubtitle
+  };
+}
+
 const getCachedLoginSettings = unstable_cache(
-  async () => (await requireDb().query.appSettings.findFirst({ orderBy: [desc(appSettings.updatedAt)] })) ?? demoLoginSettings,
+  async () => normalizeLoginSettings((await requireDb().query.appSettings.findFirst({ orderBy: [desc(appSettings.updatedAt)] })) ?? demoLoginSettings),
   ["login-settings"],
   { revalidate: 300, tags: ["login-settings"] }
 );
@@ -92,7 +108,7 @@ export async function getUsers() {
 }
 
 export async function getLoginSettings() {
-  if (!hasDatabase) return demoLoginSettings;
+  if (!hasDatabase) return normalizeLoginSettings(demoLoginSettings);
   return getCachedLoginSettings();
 }
 

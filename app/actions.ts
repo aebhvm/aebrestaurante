@@ -435,7 +435,7 @@ export async function createRecipeAction(formData: FormData) {
 export async function updateRecipeAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const id = Number(requireField(formData, "id"));
-  if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha invalida.");
+  if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha inválida.");
 
   const parsed = recipeSchema.safeParse({
     drinkName: requireField(formData, "drinkName"),
@@ -447,7 +447,7 @@ export async function updateRecipeAction(formData: FormData) {
   if (!parsed.success) redirect("/fichas?erro=Revise os dados da ficha.");
 
   const existing = await requireDb().query.barRecipes.findFirst({ where: eq(barRecipes.id, id) });
-  if (!existing) redirect("/fichas?erro=Ficha nao encontrada.");
+  if (!existing) redirect("/fichas?erro=Ficha não encontrada.");
 
   const image = formData.get("photo");
   const currentPhotoUrl = requireField(formData, "currentPhotoUrl") || undefined;
@@ -465,7 +465,7 @@ export async function updateRecipeAction(formData: FormData) {
 export async function deleteRecipeAction(formData: FormData) {
   const session = await requireUser(["gestor", "barman"]);
   const id = Number(requireField(formData, "id"));
-  if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha invalida.");
+  if (!Number.isInteger(id) || id <= 0) redirect("/fichas?erro=Ficha inválida.");
   await audit("recipe", id, "delete", session.id);
   revalidateTag("recipes");
   await requireDb().delete(barRecipes).where(eq(barRecipes.id, id));

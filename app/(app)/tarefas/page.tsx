@@ -11,7 +11,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { getTasks, getUsers } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { todayISO } from "@/lib/utils";
+import { priorityLabels, taskStatusLabels, todayISO } from "@/lib/utils";
 
 export default async function TasksPage({ searchParams }: { searchParams: Promise<{ date?: string; status?: string }> }) {
   const session = (await getSession())!;
@@ -22,7 +22,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title="Tarefas" description="Criação, acompanhamento e conclusão de atividades operacionais." />
-      <DateStatusFilters defaultDate={date} statusOptions={[{ value: "pendente", label: "Pendente" }, { value: "concluido", label: "Concluido" }]} />
+      <DateStatusFilters defaultDate={date} statusOptions={[{ value: "pendente", label: "Pendente" }, { value: "concluido", label: "Concluído" }]} />
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {session.role === "gestor" && (
           <Card>
@@ -30,11 +30,11 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
             <CardContent>
               <form action={createTaskAction} className="space-y-3">
                 <Field label="Título" name="title" />
-                <div className="space-y-2"><Label>Descricao</Label><Textarea name="description" required /></div>
-                <div className="space-y-2"><Label>Responsavel</Label><NativeSelect name="responsibleId">{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</NativeSelect></div>
+                <div className="space-y-2"><Label>Descrição</Label><Textarea name="description" required /></div>
+                <div className="space-y-2"><Label>Responsável</Label><NativeSelect name="responsibleId">{users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}</NativeSelect></div>
                 <Field label="Data" name="taskDate" type="date" defaultValue={date} />
-                <Field label="Horario" name="taskTime" type="time" />
-                <div className="space-y-2"><Label>Prioridade</Label><NativeSelect name="priority"><option value="media">Media</option><option value="alta">Alta</option><option value="critica">Critica</option><option value="baixa">Baixa</option></NativeSelect></div>
+                <Field label="Horário" name="taskTime" type="time" />
+                <div className="space-y-2"><Label>Prioridade</Label><NativeSelect name="priority"><option value="media">Média</option><option value="alta">Alta</option><option value="critica">Crítica</option><option value="baixa">Baixa</option></NativeSelect></div>
                 <input type="hidden" name="status" value="pendente" />
                 <Button className="w-full">Criar tarefa</Button>
               </form>
@@ -44,15 +44,15 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         <Card className={session.role === "gestor" ? "" : "lg:col-span-2"}>
           <CardContent className="p-0">
             <Table>
-              <THead><TR><TH>Tarefa</TH><TH>Responsavel</TH><TH>Data</TH><TH>Prioridade</TH><TH>Status</TH></TR></THead>
+              <THead><TR><TH>Tarefa</TH><TH>Responsável</TH><TH>Data</TH><TH>Prioridade</TH><TH>Status</TH></TR></THead>
               <TBody>
                 {tasks.map((task) => (
                   <TR key={task.id}>
                     <TD><p className="font-medium">{task.title}</p><p className="text-xs text-muted-foreground">{task.description}</p></TD>
                     <TD>{task.responsible?.name ?? "-"}</TD>
                     <TD>{task.taskDate} {task.taskTime}</TD>
-                    <TD><Badge>{task.priority}</Badge></TD>
-                    <TD><Badge variant={task.status === "concluido" ? "secondary" : "default"}>{task.status}</Badge></TD>
+                    <TD><Badge>{priorityLabels[task.priority] ?? task.priority}</Badge></TD>
+                    <TD><Badge variant={task.status === "concluido" ? "secondary" : "default"}>{taskStatusLabels[task.status] ?? task.status}</Badge></TD>
                   </TR>
                 ))}
               </TBody>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/select";
+import { stockStatusLabels } from "@/lib/utils";
 
 type RequestRow = {
   id: number;
@@ -40,7 +41,7 @@ export function StockTable({ requests, canUpdate = false, canEdit = false, selec
                   <p className="font-medium">Pedido de {order.requester?.name ?? "solicitante"}</p>
                   <p className="text-sm text-muted-foreground">{order.requestDate} às {order.requestTime}</p>
                 </div>
-                <Badge variant={order.status === "entregue" ? "secondary" : "default"}>{order.status}</Badge>
+                <Badge variant={order.status === "entregue" ? "secondary" : "default"}>{stockStatusLabels[order.status] ?? order.status}</Badge>
               </div>
               <ul className="divide-y py-2 text-sm">
                 {items.map((item) => (

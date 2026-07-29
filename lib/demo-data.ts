@@ -4,13 +4,13 @@ const today = todayISO();
 
 export const demoUsers = [
   { id: 1, name: "Marina Gestora", username: "gestor", role: "gestor" as const, active: true, lastAccessAt: new Date(), createdAt: new Date() },
-  { id: 2, name: "Lucas Garcom", username: "lucas", role: "garcom" as const, active: true, lastAccessAt: new Date(), createdAt: new Date() },
+  { id: 2, name: "Lucas Garçom", username: "lucas", role: "garcom" as const, active: true, lastAccessAt: new Date(), createdAt: new Date() },
   { id: 3, name: "Bia Barman", username: "bia", role: "barman" as const, active: true, lastAccessAt: new Date(), createdAt: new Date() },
   { id: 4, name: "Rafael Estoque", username: "estoque", role: "estoquista" as const, active: true, lastAccessAt: new Date(), createdAt: new Date() }
 ];
 
 export const demoTasks = [
-  { id: 1, title: "Conferir mise en place", responsibleId: 2, responsible: demoUsers[1], taskDate: today, taskTime: "16:00", priority: "alta", status: "pendente", description: "Checar salao antes da abertura." },
+  { id: 1, title: "Conferir mise en place", responsibleId: 2, responsible: demoUsers[1], taskDate: today, taskTime: "16:00", priority: "alta", status: "pendente", description: "Checar salão antes da abertura." },
   { id: 2, title: "Organizar speed rack", responsibleId: 3, responsible: demoUsers[2], taskDate: today, taskTime: "17:00", priority: "media", status: "concluido", description: "Reposicionar garrafas por giro." }
 ];
 
@@ -32,7 +32,7 @@ export const demoRecipes = [
   {
     id: 1,
     drinkName: "Negroni da Casa",
-    category: "Classicos",
+    category: "Clássicos",
     photoUrl: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=900&q=80",
     ingredients: [
       { item: "Gin", amount: "30 ml" },
@@ -46,23 +46,23 @@ export const demoRecipes = [
 ];
 
 export const demoStockProducts = [
-  { id: 1, name: "Xarope de acucar", unit: "garrafa", active: true },
+  { id: 1, name: "Xarope de açúcar", unit: "garrafa", active: true },
   { id: 2, name: "Guardanapo premium", unit: "pacote", active: true },
-  { id: 3, name: "Limao tahiti", unit: "kg", active: true }
+  { id: 3, name: "Limão tahiti", unit: "kg", active: true }
 ];
 
 export const demoStockRequests = [
-  { id: 1, orderNumber: "PED-DEMO-1", requesterId: 3, productId: 1, requester: demoUsers[2], productRecord: demoStockProducts[0], product: "Xarope de acucar", quantity: 2, unit: "garrafa", reason: null, requestDate: today, requestTime: "18:20", status: "solicitado" },
+  { id: 1, orderNumber: "PED-DEMO-1", requesterId: 3, productId: 1, requester: demoUsers[2], productRecord: demoStockProducts[0], product: "Xarope de açúcar", quantity: 2, unit: "garrafa", reason: null, requestDate: today, requestTime: "18:20", status: "solicitado" },
   { id: 2, orderNumber: "PED-DEMO-2", requesterId: 1, productId: 2, requester: demoUsers[0], productRecord: demoStockProducts[1], product: "Guardanapo premium", quantity: 5, unit: "pacote", reason: null, requestDate: today, requestTime: "15:30", status: "separado" }
 ];
 
 export const demoNews = [
-  { id: 1, title: "Briefing do servico", content: "Menu executivo ate 19h e reserva grande as 21h.", priority: "alta", audience: "todos", publishedAt: today, expiresAt: today }
+  { id: 1, title: "Briefing do serviço", content: "Menu executivo até 19h e reserva grande às 21h.", priority: "alta", audience: "todos", publishedAt: today, expiresAt: today }
 ];
 
 export const demoLoginSettings = {
   loginLogoUrl: "",
   loginEyebrow: "AEB Restaurante",
-  loginTitle: "Operacao do restaurante em tempo real.",
-  loginSubtitle: "Acesse tarefas, pracas, escalas, descansos e pedidos de estoque com seguranca."
+  loginTitle: "Operação do restaurante em tempo real.",
+  loginSubtitle: "Acesse tarefas, praças, escalas, descansos e pedidos de estoque com segurança."
 };

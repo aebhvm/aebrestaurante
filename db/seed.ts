@@ -21,7 +21,7 @@ async function main() {
     .insert(users)
     .values([
       { name: "Marina Gestora", username: "gestor", role: "gestor", passwordHash },
-      { name: "Lucas Garcom", username: "lucas", role: "garcom", passwordHash },
+      { name: "Lucas Garçom", username: "lucas", role: "garcom", passwordHash },
       { name: "Bia Barman", username: "bia", role: "barman", passwordHash },
       { name: "Rafael Estoque", username: "estoque", role: "estoquista", passwordHash }
     ])
@@ -29,8 +29,8 @@ async function main() {
 
   await db.insert(appSettings).values({
     loginEyebrow: "AEB Restaurante",
-    loginTitle: "Operacao do restaurante em tempo real.",
-    loginSubtitle: "Acesse tarefas, pracas, escalas, descansos e pedidos de estoque com seguranca.",
+    loginTitle: "Operação do restaurante em tempo real.",
+    loginSubtitle: "Acesse tarefas, praças, escalas, descansos e pedidos de estoque com segurança.",
     createdBy: gestor.id
   });
 
@@ -79,7 +79,7 @@ async function main() {
 
   await db.insert(barRecipes).values({
     drinkName: "Negroni da Casa",
-    category: "Classicos",
+    category: "Clássicos",
     ingredients: [
       { item: "Gin", amount: "30 ml" },
       { item: "Campari", amount: "30 ml" },
@@ -91,10 +91,10 @@ async function main() {
     createdBy: gestor.id
   });
 
-  const [xarope] = await db.insert(stockProducts).values({ name: "Xarope de acucar", unit: "garrafa", createdBy: estoquista.id }).returning();
+  const [xarope] = await db.insert(stockProducts).values({ name: "Xarope de açúcar", unit: "garrafa", createdBy: estoquista.id }).returning();
   await db.insert(stockProducts).values([
     { name: "Guardanapo premium", unit: "pacote", createdBy: estoquista.id },
-    { name: "Limao tahiti", unit: "kg", createdBy: estoquista.id }
+    { name: "Limão tahiti", unit: "kg", createdBy: estoquista.id }
   ]);
 
   await db.insert(stockRequests).values({
@@ -110,8 +110,8 @@ async function main() {
   });
 
   await db.insert(news).values({
-    title: "Briefing do servico",
-    content: "Hoje teremos menu executivo ate 19h e reserva grande as 21h.",
+    title: "Briefing do serviço",
+    content: "Hoje teremos menu executivo até 19h e reserva grande às 21h.",
     priority: "alta",
     publishedAt: today,
     expiresAt: today,
@@ -119,7 +119,7 @@ async function main() {
     createdBy: gestor.id
   });
 
-  console.log("Seed concluido. Usuarios iniciais criados.");
+  console.log("Seed concluído. Usuários iniciais criados.");
 }
 
 main().catch((error) => {

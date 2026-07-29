@@ -11,7 +11,7 @@ async function fetchProducts() {
   if (cachedProducts) return cachedProducts;
   productsRequest ??= fetch("/api/fichas/products", { cache: "no-store" })
     .then(async (response) => {
-      if (!response.ok) throw new Error("Nao foi possivel carregar os ingredientes.");
+      if (!response.ok) throw new Error("Não foi possível carregar os ingredientes.");
       const data = await response.json() as { products?: Product[] };
       cachedProducts = data.products ?? [];
       return cachedProducts;
@@ -41,7 +41,7 @@ export function useRecipeProducts() {
       setProducts(loaded);
       return loaded;
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Nao foi possivel carregar os ingredientes.");
+      setError(caught instanceof Error ? caught.message : "Não foi possível carregar os ingredientes.");
       return [];
     } finally {
       setLoading(false);

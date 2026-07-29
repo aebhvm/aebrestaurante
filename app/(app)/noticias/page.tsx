@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getActiveNewsForManager, getNewsForUser, getUsers } from "@/lib/data";
 import { getSession } from "@/lib/session";
 import { todayISO } from "@/lib/utils";
+import { priorityLabels } from "@/lib/utils";
 
 type NewsValues = {
   id: number;
@@ -45,7 +46,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
             const values: NewsValues = { id: item.id, title: item.title, content: item.content, priority: item.priority as NewsValues["priority"], publishedAt: item.publishedAt, expiresAt: item.expiresAt, audience: item.audience as NewsValues["audience"], pdfUrl: "pdfUrl" in item && typeof item.pdfUrl === "string" ? item.pdfUrl : null, recipientIds };
             return (
               <Card key={item.id}>
-                <CardHeader><div className="flex items-center justify-between gap-3"><CardTitle>{item.title}</CardTitle><Badge>{item.priority}</Badge></div></CardHeader>
+                <CardHeader><div className="flex items-center justify-between gap-3"><CardTitle>{item.title}</CardTitle><Badge>{priorityLabels[item.priority] ?? item.priority}</Badge></div></CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{item.content}</p>
                   <p className="mt-4 text-xs text-muted-foreground">Publicada em {item.publishedAt} · válida até {item.expiresAt}</p>

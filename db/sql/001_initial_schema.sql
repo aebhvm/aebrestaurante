@@ -23,8 +23,8 @@ CREATE TABLE app_settings (
   id serial PRIMARY KEY,
   login_logo_url text,
   login_eyebrow varchar(120) NOT NULL DEFAULT 'AEB Restaurante',
-  login_title varchar(220) NOT NULL DEFAULT 'Gestao precisa para salao, bar e estoque.',
-  login_subtitle text NOT NULL DEFAULT 'Controle tarefas, escalas, pracas, fichas tecnicas, noticias e pedidos de estoque.',
+  login_title varchar(220) NOT NULL DEFAULT 'Gestão precisa para salão, bar e estoque.',
+  login_subtitle text NOT NULL DEFAULT 'Controle tarefas, escalas, praças, fichas técnicas, notícias e pedidos de estoque.',
   created_by integer REFERENCES users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()

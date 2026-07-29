@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { getBreaks, getNewsForUser, getShifts, getTasks } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { isTaskOverdue, todayISO } from "@/lib/utils";
+import { isTaskOverdue, priorityLabels, todayISO } from "@/lib/utils";
 
 type TaskItem = {
   id: number;
@@ -41,7 +41,7 @@ export default async function WaiterDashboard({ searchParams }: { searchParams: 
         <CardContent className="space-y-3">
           {news.map((item) => (
             <div key={item.id} className="rounded-md border p-3">
-              <div className="flex items-center justify-between gap-3"><p className="font-medium">{item.title}</p><Badge>{item.priority}</Badge></div>
+              <div className="flex items-center justify-between gap-3"><p className="font-medium">{item.title}</p><Badge>{priorityLabels[item.priority] ?? item.priority}</Badge></div>
               <p className="mt-1 text-sm text-muted-foreground">{item.content}</p>
             </div>
           ))}

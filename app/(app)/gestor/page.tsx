@@ -31,8 +31,8 @@ export default async function ManagerDashboard({ searchParams }: { searchParams:
           <CardContent className="space-y-2">
             {data.todaysShifts.length ? data.todaysShifts.map((shift) => (
               <div key={shift.id} className="rounded-md border p-3 text-sm">
-                <p className="font-medium">{shift.waiter?.name ?? shift.bartender?.name ?? "Funcionario"}</p>
-                <p className="text-muted-foreground">{shift.station?.name ?? "Sem praca vinculada"}</p>
+                <p className="font-medium">{shift.waiter?.name ?? shift.bartender?.name ?? "Funcionário"}</p>
+                <p className="text-muted-foreground">{shift.station?.name ?? "Sem praça vinculada"}</p>
                 {shift.station?.description && <p className="mt-1 text-xs text-muted-foreground">{shift.station.description}</p>}
               </div>
             )) : <p className="text-sm text-muted-foreground">Nenhuma escala cadastrada para a data.</p>}
@@ -43,8 +43,8 @@ export default async function ManagerDashboard({ searchParams }: { searchParams:
           <CardContent className="space-y-2">
             {data.todaysBreaks.length ? data.todaysBreaks.map((item) => (
               <div key={item.id} className="rounded-md border p-3 text-sm">
-                <p className="font-medium">{item.waiter?.name ?? item.bartender?.name ?? "Funcionario"}</p>
-                <p className="text-muted-foreground">{item.startsAt} as {item.endsAt}</p>
+                <p className="font-medium">{item.waiter?.name ?? item.bartender?.name ?? "Funcionário"}</p>
+                <p className="text-muted-foreground">{item.startsAt} às {item.endsAt}</p>
               </div>
             )) : <p className="text-sm text-muted-foreground">Nenhum descanso cadastrado para a data.</p>}
           </CardContent>

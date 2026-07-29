@@ -43,3 +43,21 @@ export function isTaskOverdue(taskDate: string, taskTime: string, now = new Date
   const today = todayISO(now);
   return taskDate < today || (taskDate === today && taskTime < brasiliaTime(now));
 }
+
+export const priorityLabels: Record<string, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+  critica: "Crítica"
+};
+
+export const taskStatusLabels: Record<string, string> = {
+  pendente: "Pendente",
+  concluido: "Concluído"
+};
+
+export const stockStatusLabels: Record<string, string> = {
+  solicitado: "Solicitado",
+  separado: "Separado",
+  entregue: "Entregue"
+};

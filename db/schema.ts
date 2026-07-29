@@ -207,8 +207,8 @@ export const appSettings = pgTable("app_settings", {
   id: serial("id").primaryKey(),
   loginLogoUrl: text("login_logo_url"),
   loginEyebrow: varchar("login_eyebrow", { length: 120 }).notNull().default("AEB Restaurante"),
-  loginTitle: varchar("login_title", { length: 220 }).notNull().default("Gestao precisa para salao, bar e estoque."),
-  loginSubtitle: text("login_subtitle").notNull().default("Controle tarefas, escalas, pracas, fichas tecnicas, noticias e pedidos de estoque."),
+  loginTitle: varchar("login_title", { length: 220 }).notNull().default("Gestão precisa para salão, bar e estoque."),
+  loginSubtitle: text("login_subtitle").notNull().default("Controle tarefas, escalas, praças, fichas técnicas, notícias e pedidos de estoque."),
   createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
   ...lifecycle
 });
