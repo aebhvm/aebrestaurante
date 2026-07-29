@@ -13,8 +13,8 @@ export function RecipeEditTrigger({ recipeId, drinkName }: { recipeId: number; d
   async function openEditor() {
     setLoading(true);
     try {
-      const module = await import("@/components/recipe-edit-dialog");
-      setDialog(() => module.RecipeEditDialog);
+      const recipeDialogModule = await import("@/components/recipe-edit-dialog");
+      setDialog(() => recipeDialogModule.RecipeEditDialog);
     } catch {
       setLoading(false);
     }

@@ -30,7 +30,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <form action={createUserAction} className="space-y-3">
                 <Field label="Nome" name="name" />
                 <Field label="Usuário de login" name="username" />
-                <Field label="Senha" name="password" type="password" minLength={4} placeholder="4 dígitos" />
+                <Field label="Senha" name="password" type="password" minLength={12} placeholder="Mínimo de 12 caracteres" />
                 <div className="space-y-2">
                   <Label>Cargo</Label>
                   <NativeSelect name="role">

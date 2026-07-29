@@ -7,7 +7,6 @@ import {
   barRecipes,
   breaks,
   news,
-  newsRecipients,
   shifts,
   stations,
   stockProducts,

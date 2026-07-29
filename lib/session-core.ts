@@ -27,7 +27,10 @@ function fromBase64Url(input: string) {
 }
 
 async function key() {
-  const secret = process.env.AUTH_SECRET ?? "local-development-secret-change-me";
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("AUTH_SECRET must contain at least 32 characters.");
+  }
   return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
 }
 

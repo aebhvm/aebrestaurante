@@ -19,7 +19,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { MobileNav } from "@/components/mobile-nav";
 import { getLoginSettings } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { canAccess, dashboardForRole, roleLabels } from "@/lib/permissions";
+import { canAccess, roleLabels } from "@/lib/permissions";
 
 const nav = [
   { href: "/gestor", label: "Dashboard", icon: LayoutDashboard, iconName: "LayoutDashboard", roles: ["gestor"] },

@@ -10,9 +10,12 @@ async function main() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required");
   }
+  if (!process.env.SEED_PASSWORD || process.env.SEED_PASSWORD.length < 12) {
+    throw new Error("SEED_PASSWORD with at least 12 characters is required");
+  }
 
   const db = drizzle(neon(process.env.DATABASE_URL));
-  const passwordHash = await bcrypt.hash("Senha@123", 12);
+  const passwordHash = await bcrypt.hash(process.env.SEED_PASSWORD, 12);
 
   const [gestor, garcom, barman, estoquista] = await db
     .insert(users)
@@ -116,7 +119,7 @@ async function main() {
     createdBy: gestor.id
   });
 
-  console.log("Seed concluido. Usuarios: gestor, lucas, bia, estoque / Senha@123");
+  console.log("Seed concluido. Usuarios iniciais criados.");
 }
 
 main().catch((error) => {
