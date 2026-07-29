@@ -3,10 +3,11 @@ import { canAccess, dashboardForRole } from "@/lib/permissions";
 import { cookieName, verifySessionToken } from "@/lib/session-core";
 
 const publicRoutes = ["/login"];
+const publicAssets = new Set(["/manifest.webmanifest", "/sw.js", "/aeb-icon.svg"]);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (publicAssets.has(pathname) || publicRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
