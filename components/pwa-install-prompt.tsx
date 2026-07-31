@@ -25,12 +25,10 @@ export function PwaInstallPrompt() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [ios, setIos] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
     if (!isMobileDevice() || isRunningStandalone()) return;
-
-    const dismissed = window.sessionStorage.getItem("aeb-pwa-install-dismissed") === "1";
-    if (dismissed) return;
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
@@ -38,31 +36,40 @@ export function PwaInstallPrompt() {
       setVisible(true);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    const handleAppInstalled = () => setVisible(false);
+    const showTimer = window.setTimeout(() => setVisible(true), 700);
 
-    if (isIosDevice()) {
-      setIos(true);
-      setVisible(true);
-    }
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
+    if (isIosDevice()) setIos(true);
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => undefined);
     }
 
-    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => {
+      window.clearTimeout(showTimer);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+    };
   }, []);
 
-  const dismiss = () => {
-    window.sessionStorage.setItem("aeb-pwa-install-dismissed", "1");
-    setVisible(false);
-  };
+  const dismiss = () => setVisible(false);
 
   const install = async () => {
-    if (!installPrompt) return;
-    await installPrompt.prompt();
-    const choice = await installPrompt.userChoice;
-    if (choice.outcome === "accepted") setVisible(false);
-    setInstallPrompt(null);
+    if (!installPrompt) {
+      setShowInstructions(true);
+      return;
+    }
+
+    try {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === "accepted") setVisible(false);
+    } finally {
+      setInstallPrompt(null);
+    }
   };
 
   if (!visible) return null;
@@ -75,12 +82,16 @@ export function PwaInstallPrompt() {
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold">Use o AEB Restaurante como app</p>
         <p className="text-xs text-muted-foreground">
-          {ios ? "Toque em Compartilhar e depois em Adicionar à Tela de Início." : "Instale no celular para abrir mais rápido."}
+          {ios
+            ? "Toque em Compartilhar e depois em Adicionar à Tela de Início."
+            : showInstructions
+              ? "Abra o menu do navegador e escolha Instalar aplicativo ou Adicionar à tela inicial."
+              : "Instale no celular para abrir mais rápido."}
         </p>
       </div>
       {!ios && (
         <Button type="button" size="sm" onClick={install}>
-          Instalar
+          {installPrompt ? "Instalar" : "Como instalar"}
         </Button>
       )}
       <Button type="button" variant="ghost" size="icon" aria-label="Fechar convite de instalação" onClick={dismiss}>
