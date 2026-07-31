@@ -1,12 +1,10 @@
 import type { MetadataRoute } from "next";
-import { getLoginSettings } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
-  const settings = await getLoginSettings();
-  const iconUrl = settings.loginLogoUrl || "/aeb-icon.svg";
+  const iconUrl = "/api/pwa-icon";
 
   return {
     name: "AEB Restaurante",
@@ -21,13 +19,15 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     lang: "pt-BR",
     icons: [
       {
-        src: iconUrl,
+        src: `${iconUrl}?size=192`,
         sizes: "192x192",
+        type: "image/png",
         purpose: "any"
       },
       {
-        src: iconUrl,
+        src: `${iconUrl}?size=512`,
         sizes: "512x512",
+        type: "image/png",
         purpose: "maskable"
       }
     ]

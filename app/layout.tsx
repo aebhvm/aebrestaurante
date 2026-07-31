@@ -2,21 +2,22 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
-import { getLoginSettings } from "@/lib/data";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getLoginSettings();
-  const iconUrl = settings.loginLogoUrl || "/aeb-icon.svg";
+  const iconUrl = "/api/pwa-icon";
 
   return {
     title: "AEB Restaurante",
     description: "Gestão profissional de operações para restaurantes e bares",
     icons: {
-      icon: iconUrl,
-      apple: iconUrl
+      icon: [
+        { url: `${iconUrl}?size=192`, sizes: "192x192", type: "image/png" },
+        { url: `${iconUrl}?size=512`, sizes: "512x512", type: "image/png" }
+      ],
+      apple: { url: `${iconUrl}?size=180`, sizes: "180x180", type: "image/png" }
     }
   };
 }
