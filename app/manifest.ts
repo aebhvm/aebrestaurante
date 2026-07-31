@@ -1,6 +1,13 @@
 import type { MetadataRoute } from "next";
+import { getLoginSettings } from "@/lib/data";
 
-export default function manifest(): MetadataRoute.Manifest {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const settings = await getLoginSettings();
+  const iconUrl = settings.loginLogoUrl || "/aeb-icon.svg";
+
   return {
     name: "AEB Restaurante",
     short_name: "AEB Restaurante",
@@ -14,15 +21,13 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "pt-BR",
     icons: [
       {
-        src: "/aeb-icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: iconUrl,
+        sizes: "192x192",
         purpose: "any"
       },
       {
-        src: "/aeb-icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
+        src: iconUrl,
+        sizes: "512x512",
         purpose: "maskable"
       }
     ]
