@@ -36,7 +36,7 @@ export function LoginForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
-            <Input id="password" type="password" {...form.register("password")} />
+            <Input id="password" type="password" minLength={4} {...form.register("password")} />
           </div>
           {state?.error && <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{state.error}</p>}
           <Button className="w-full" disabled={pending}>

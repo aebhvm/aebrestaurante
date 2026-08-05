@@ -102,7 +102,7 @@ export async function createUserAction(formData: FormData) {
     password: requireField(formData, "password"),
     role: requireField(formData, "role")
   });
-  if (!parsed.success) goToUsersWith("Preencha nome, usuário, cargo e uma senha com pelo menos 12 caracteres.");
+  if (!parsed.success) goToUsersWith("Preencha nome, usuário, cargo e uma senha com pelo menos 4 caracteres.");
 
   const database = requireDb();
   const existing = await database.query.users.findFirst({ where: eq(users.username, parsed.data.username) });
@@ -125,7 +125,7 @@ export async function updateUserAction(formData: FormData) {
     role: requireField(formData, "role"),
     active: requireField(formData, "active")
   });
-  if (!parsed.success) goToUsersWith("Revise os dados do usuário. A senha nova deve ter pelo menos 12 caracteres.");
+  if (!parsed.success) goToUsersWith("Revise os dados do usuário. A senha nova deve ter pelo menos 4 caracteres.");
 
   if (parsed.data.id === session.id && (parsed.data.role !== "gestor" || !parsed.data.active)) {
     goToUsersWith("Você não pode remover seu próprio acesso de gestor.");

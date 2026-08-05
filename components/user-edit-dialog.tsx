@@ -66,7 +66,7 @@ export function UserEditDialog({ user }: { user: EditableUser }) {
               </div>
               <div className="space-y-1.5 md:col-span-2">
                 <Label>Nova senha</Label>
-                <Input aria-label="Nova senha" name="password" type="password" minLength={12} placeholder="Mínimo de 12 caracteres" />
+                <Input aria-label="Nova senha" name="password" type="password" minLength={4} placeholder="Mínimo 4 caracteres" />
               </div>
               <div className="flex justify-end md:col-span-2">
                 <Button size="sm"><Save className="size-4" />Salvar</Button>
