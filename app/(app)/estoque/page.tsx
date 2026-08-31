@@ -2,6 +2,7 @@ import { Boxes, CheckCircle2, History, PackageCheck } from "lucide-react";
 import { createStockProductAction, deleteStockProductAction, updateStockProductAction } from "@/app/actions";
 import { DateStatusFilters } from "@/components/filters";
 import { PageHeader } from "@/components/page-header";
+import { PrintButton } from "@/components/print-button";
 import { StatCard } from "@/components/stat-card";
 import { StockTable } from "@/components/stock-table";
 import { Button } from "@/components/ui/button";
@@ -23,10 +24,10 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
   const orders = Array.from(new Set(requests.map((item) => item.orderNumber ?? `LEG-${item.id}`))).map((key) => requests.find((item) => (item.orderNumber ?? `LEG-${item.id}`) === key)!);
   return (
     <>
-      <PageHeader title="Estoque" description="Cadastre produtos e consulte os pedidos pela data selecionada." />
+      <PageHeader title="Estoque" description="Cadastre produtos e consulte os pedidos pela data selecionada." action={<PrintButton />} />
       {(params.ok || params.erro) && <p className={`mb-4 rounded-md border p-3 text-sm ${params.erro ? "border-destructive/40 text-destructive" : "border-emerald-500/40 text-emerald-700"}`}>{params.erro ?? params.ok}</p>}
-      <DateStatusFilters defaultDate={date} />
-      <section className="grid gap-4 md:grid-cols-4">
+      <div className="print-hidden"><DateStatusFilters defaultDate={date} /></div>
+      <section className="print-hidden grid gap-4 md:grid-cols-4">
         <StatCard label="Pendentes" value={orders.filter((item) => item.status === "solicitado").length} icon={Boxes} tone="amber" />
         <StatCard label="Separados" value={orders.filter((item) => item.status === "separado").length} icon={PackageCheck} />
         <StatCard label="Entregues" value={orders.filter((item) => item.status === "entregue").length} icon={CheckCircle2} tone="green" />
@@ -36,7 +37,7 @@ export default async function StockDashboard({ searchParams }: { searchParams: P
         <h2 className="mb-3 text-lg font-semibold">Pedidos da data selecionada</h2>
         <StockTable requests={requests} canUpdate={canUpdateOrders} selectedDate={date} />
       </div>
-      <div className="mt-6 grid gap-4 lg:grid-cols-[360px_1fr]">
+      <div className="print-hidden mt-6 grid gap-4 lg:grid-cols-[360px_1fr]">
         <Card>
           <CardHeader><CardTitle>Novo produto</CardTitle></CardHeader>
           <CardContent>

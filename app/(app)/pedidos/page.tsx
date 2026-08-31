@@ -1,5 +1,6 @@
 import { DateStatusFilters } from "@/components/filters";
 import { PageHeader } from "@/components/page-header";
+import { PrintButton } from "@/components/print-button";
 import { StockOrderBuilder } from "@/components/stock-order-builder";
 import { StockTable } from "@/components/stock-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +20,12 @@ export default async function StockRequestsPage({ searchParams }: { searchParams
 
   return (
     <>
-      <PageHeader title="Pedidos de estoque" description="Monte uma lista de produtos e registre o pedido na data escolhida." />
+      <PageHeader title="Pedidos de estoque" description="Monte uma lista de produtos e registre o pedido na data escolhida." action={<PrintButton />} />
       {(params.ok || params.erro) && <p className={`mb-4 rounded-md border p-3 text-sm ${params.erro ? "border-destructive/40 text-destructive" : "border-emerald-500/40 text-emerald-700"}`}>{params.erro ?? params.ok}</p>}
-      <DateStatusFilters defaultDate={date} statusOptions={[{ value: "solicitado", label: "Solicitado" }, { value: "separado", label: "Separado" }, { value: "entregue", label: "Entregue" }]} />
+      <div className="print-hidden"><DateStatusFilters defaultDate={date} statusOptions={[{ value: "solicitado", label: "Solicitado" }, { value: "separado", label: "Separado" }, { value: "entregue", label: "Entregue" }]} /></div>
       <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
         {canRequest && (
-          <Card>
+          <Card className="print-hidden">
             <CardHeader><CardTitle>Novo pedido</CardTitle></CardHeader>
             <CardContent><StockOrderBuilder products={products} requestDate={date} /></CardContent>
           </Card>

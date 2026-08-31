@@ -44,7 +44,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-card/80 backdrop-blur lg:block">
+      <aside className="print-hidden fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-card/80 backdrop-blur lg:block">
         <div className="flex h-16 items-center gap-2 border-b px-5">
           {settings.loginLogoUrl ? (
             <img src={settings.loginLogoUrl} alt={brandName} className="size-9 rounded-md object-contain" />
@@ -65,8 +65,8 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
       </aside>
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/85 px-4 backdrop-blur md:px-6">
+      <div className="print-no-sidebar lg:pl-64">
+        <header className="print-hidden sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/85 px-4 backdrop-blur md:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <MobileNav items={items.map(({ href, label, iconName }) => ({ href, label, iconName: iconName as "Boxes" | "CalendarClock" | "ClipboardList" | "Coffee" | "LayoutDashboard" | "Newspaper" | "PauseCircle" | "Users" }))} brandName={brandName} brandSubtitle={brandSubtitle} logoUrl={settings.loginLogoUrl} />
             <div className="min-w-0"><p className="truncate text-sm font-medium">{roleLabels[session.role]}</p><p className="truncate text-xs text-muted-foreground">{session.name}</p></div>

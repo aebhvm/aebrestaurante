@@ -30,11 +30,11 @@ export function StockTable({ requests, canUpdate = false, canEdit = false, selec
   }, new Map<string, { key: string; items: RequestRow[] }>()).values());
 
   return (
-    <div className="space-y-3">
+    <div className="print-area space-y-3">
       {groups.map(({ key, items }) => {
         const order = items[0];
         return (
-          <Card key={key}>
+          <Card key={key} className="print-card">
             <CardContent className="p-4">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b pb-3">
                 <div>
@@ -49,15 +49,18 @@ export function StockTable({ requests, canUpdate = false, canEdit = false, selec
                     <span>{item.product}</span>
                     {canEdit && order.status === "solicitado" ? (
                       <div className="flex items-center gap-2">
-                        <form action={updateStockOrderItemAction} className="flex items-center gap-2">
+                        <strong className="print-only">{item.quantity} {item.unit}</strong>
+                        <div className="print-hidden flex items-center gap-2">
+                          <form action={updateStockOrderItemAction} className="flex items-center gap-2">
                           <input type="hidden" name="id" value={item.id} /><input type="hidden" name="date" value={selectedDate || item.requestDate} />
                           <Input name="quantity" type="number" min="1" defaultValue={item.quantity} className="w-20" aria-label={`Quantidade de ${item.product}`} />
                           <Button type="submit" size="icon" variant="secondary" aria-label={`Salvar ${item.product}`}><Save className="size-4" /></Button>
                         </form>
-                        <form action={deleteStockOrderItemAction}>
+                          <form action={deleteStockOrderItemAction}>
                           <input type="hidden" name="id" value={item.id} /><input type="hidden" name="date" value={selectedDate || item.requestDate} />
                           <Button type="submit" size="icon" variant="ghost" aria-label={`Excluir ${item.product}`}><Trash2 className="size-4" /></Button>
-                        </form>
+                          </form>
+                        </div>
                       </div>
                     ) : <strong>{item.quantity} {item.unit}</strong>}
                   </li>
@@ -65,7 +68,7 @@ export function StockTable({ requests, canUpdate = false, canEdit = false, selec
               </ul>
               {order.reason && <div className="border-t py-3 text-sm"><p className="font-medium">Observação</p><p className="mt-1 text-muted-foreground">{order.reason}</p></div>}
               {canUpdate && (
-                <form action={updateStockStatusAction} className="flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-end">
+                <form action={updateStockStatusAction} className="print-hidden flex flex-col gap-2 border-t pt-3 sm:flex-row sm:justify-end">
                   <input type="hidden" name="ids" value={items.map((item) => item.id).join(",")} />
                   <NativeSelect name="status" defaultValue={order.status} className="sm:w-36">
                     <option value="solicitado">Solicitado</option>

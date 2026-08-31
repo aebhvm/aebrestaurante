@@ -66,4 +66,35 @@
   .focus-ring {
     @apply outline-none ring-offset-background transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
   }
+
+  .print-only {
+    display: none;
+  }
+}
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-area {
+    width: 100%;
+  }
+
+  .print-card {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+
+  .print-no-sidebar {
+    padding-left: 0 !important;
+  }
 }
