@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
+import { NewsCard } from "@/components/news-card";
 import { getBreaks, getNewsForUser, getShifts, getTasks } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { isTaskOverdue, priorityLabels, todayISO } from "@/lib/utils";
+import { isTaskOverdue, todayISO } from "@/lib/utils";
 
 type TaskItem = {
   id: number;
@@ -36,17 +37,7 @@ export default async function WaiterDashboard({ searchParams }: { searchParams: 
         <ListCard title="Meu descanso" items={breaks.map((item) => `${item.startsAt} às ${item.endsAt}`)} />
         <ListCard title="Minha escala" items={shifts.map((item) => item.station ? `${item.station.name}${item.station.description ? ` - ${item.station.description}` : ""}` : "Sem praça definida")} />
       </div>
-      <Card className="mt-4">
-        <CardHeader><CardTitle>Notícias para mim</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {news.map((item) => (
-            <div key={item.id} className="rounded-md border p-3">
-              <div className="flex items-center justify-between gap-3"><p className="font-medium">{item.title}</p><Badge>{priorityLabels[item.priority] ?? item.priority}</Badge></div>
-              <p className="mt-1 text-sm text-muted-foreground">{item.content}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      <NewsCard title="Notícias para mim" items={news} />
     </>
   );
 }

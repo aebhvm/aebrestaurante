@@ -1,16 +1,17 @@
 import { Boxes, CalendarClock, CheckCircle2, ClipboardList, PauseCircle, TimerOff } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { NewsCard } from "@/components/news-card";
 import { StatCard } from "@/components/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getManagerDashboard } from "@/lib/data";
+import { getActiveNewsForManager, getManagerDashboard } from "@/lib/data";
 import { todayISO } from "@/lib/utils";
 
 export default async function ManagerDashboard({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
   const params = await searchParams;
   const date = params.date ?? todayISO();
-  const data = await getManagerDashboard(date);
+  const [data, news] = await Promise.all([getManagerDashboard(date), getActiveNewsForManager(date)]);
 
   return (
     <>
@@ -50,6 +51,7 @@ export default async function ManagerDashboard({ searchParams }: { searchParams:
           </CardContent>
         </Card>
       </section>
+      <NewsCard title="Notícias" items={news} />
     </>
   );
 }
