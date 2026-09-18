@@ -8,6 +8,7 @@ import {
   Coffee,
   LayoutDashboard,
   LogOut,
+  Newspaper,
   PauseCircle,
   Users
 } from "lucide-react";
@@ -29,7 +30,8 @@ const nav = [
   { href: "/escalas", label: "Escalas", icon: CalendarClock, iconName: "CalendarClock", roles: ["gestor"] },
   { href: "/descansos", label: "Descansos", icon: PauseCircle, iconName: "PauseCircle", roles: ["gestor"] },
   { href: "/fichas", label: "Fichas", icon: Coffee, iconName: "Coffee", roles: ["gestor", "garcom", "barman"] },
-  { href: "/pedidos", label: "Pedidos", icon: Boxes, iconName: "Boxes", roles: ["gestor", "barman", "estoquista"] }
+  { href: "/pedidos", label: "Pedidos", icon: Boxes, iconName: "Boxes", roles: ["gestor", "barman", "estoquista"] },
+  { href: "/noticias", label: "Notícias", icon: Newspaper, iconName: "Newspaper", roles: ["gestor"] }
 ];
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -66,7 +68,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       <div className="print-no-sidebar lg:pl-64">
         <header className="print-hidden sticky top-0 z-20 flex h-16 items-center justify-between border-b bg-background/85 px-4 backdrop-blur md:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            <MobileNav items={items.map(({ href, label, iconName }) => ({ href, label, iconName: iconName as "Boxes" | "CalendarClock" | "ClipboardList" | "Coffee" | "LayoutDashboard" | "PauseCircle" | "Users" }))} brandName={brandName} brandSubtitle={brandSubtitle} logoUrl={settings.loginLogoUrl} />
+            <MobileNav items={items.map(({ href, label, iconName }) => ({ href, label, iconName: iconName as "Boxes" | "CalendarClock" | "ClipboardList" | "Coffee" | "LayoutDashboard" | "Newspaper" | "PauseCircle" | "Users" }))} brandName={brandName} brandSubtitle={brandSubtitle} logoUrl={settings.loginLogoUrl} />
             <div className="min-w-0"><p className="truncate text-sm font-medium">{roleLabels[session.role]}</p><p className="truncate text-xs text-muted-foreground">{session.name}</p></div>
           </div>
           <div className="flex items-center gap-2">

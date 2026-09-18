@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Boxes, CalendarClock, ClipboardList, Coffee, LayoutDashboard, Menu, PauseCircle, Users, X } from "lucide-react";
+import { Boxes, CalendarClock, ClipboardList, Coffee, LayoutDashboard, Menu, Newspaper, PauseCircle, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const icons = { Boxes, CalendarClock, ClipboardList, Coffee, LayoutDashboard, PauseCircle, Users };
+const icons = { Boxes, CalendarClock, ClipboardList, Coffee, LayoutDashboard, Newspaper, PauseCircle, Users };
 
 type MobileItem = { href: string; label: string; iconName: keyof typeof icons };
 
