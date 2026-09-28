@@ -35,6 +35,10 @@ export const taskSchema = z.object({
   notes: z.string().optional()
 });
 
+export const updateTaskSchema = taskSchema.extend({
+  id: z.coerce.number().int().positive()
+});
+
 export const stockProductSchema = z.object({
   name: z.string().min(2),
   unit: z.string().min(1),

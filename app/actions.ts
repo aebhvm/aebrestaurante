@@ -23,6 +23,7 @@ import {
   updateBreakSchema,
   updateShiftSchema,
   updateStockProductSchema,
+  updateTaskSchema,
   updateUserSchema,
   userSchema
 } from "@/lib/validators";
@@ -216,6 +217,49 @@ export async function createTaskAction(formData: FormData) {
   await audit("task", created.id, "create", session.id, created.status);
   revalidatePath("/tarefas");
   revalidatePath("/gestor");
+}
+
+export async function updateTaskAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const parsed = updateTaskSchema.safeParse({
+    id: requireField(formData, "id"),
+    title: requireField(formData, "title"),
+    description: requireField(formData, "description"),
+    responsibleId: requireField(formData, "responsibleId"),
+    taskDate: requireField(formData, "taskDate"),
+    taskTime: requireField(formData, "taskTime"),
+    priority: requireField(formData, "priority"),
+    status: requireField(formData, "status"),
+    notes: requireField(formData, "notes")
+  });
+  if (!parsed.success) redirect("/tarefas?erro=Revise os dados da tarefa.");
+
+  const responsible = await requireDb().query.users.findFirst({ where: eq(users.id, parsed.data.responsibleId) });
+  if (!responsible || !responsible.active) redirect("/tarefas?erro=Responsável inválido.");
+
+  const { id, ...values } = parsed.data;
+  const [updated] = await requireDb().update(tasks).set({ ...values, updatedAt: new Date() }).where(eq(tasks.id, id)).returning();
+  if (!updated) redirect("/tarefas?erro=Tarefa não encontrada.");
+  await audit("task", id, "update", session.id, updated.status);
+  revalidatePath("/tarefas");
+  revalidatePath("/gestor");
+  revalidatePath("/garcom");
+  redirect(`/tarefas?date=${updated.taskDate}&status=${updated.status}&ok=Tarefa atualizada com sucesso.`);
+}
+
+export async function deleteTaskAction(formData: FormData) {
+  const session = await requireUser(["gestor"]);
+  const id = Number(requireField(formData, "id"));
+  const date = requireField(formData, "date") || todayISO();
+  if (!Number.isInteger(id) || id <= 0) redirect(`/tarefas?date=${date}&erro=Tarefa inválida.`);
+
+  const [deleted] = await requireDb().delete(tasks).where(eq(tasks.id, id)).returning({ id: tasks.id });
+  if (!deleted) redirect(`/tarefas?date=${date}&erro=Tarefa não encontrada.`);
+  await audit("task", id, "delete", session.id);
+  revalidatePath("/tarefas");
+  revalidatePath("/gestor");
+  revalidatePath("/garcom");
+  redirect(`/tarefas?date=${date}&ok=Tarefa excluída com sucesso.`);
 }
 
 export async function completeTaskAction(formData: FormData) {
