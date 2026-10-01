@@ -9,7 +9,7 @@ import { NativeSelect } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getActiveNewsForManager, getNewsForUser, getUsers } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { todayISO } from "@/lib/utils";
+import { formatDateBR, todayISO } from "@/lib/utils";
 import { priorityLabels } from "@/lib/utils";
 
 type NewsValues = {
@@ -49,7 +49,7 @@ export default async function NewsPage({ searchParams }: { searchParams: Promise
                 <CardHeader><div className="flex items-center justify-between gap-3"><CardTitle>{item.title}</CardTitle><Badge>{priorityLabels[item.priority] ?? item.priority}</Badge></div></CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">{item.content}</p>
-                  <p className="mt-4 text-xs text-muted-foreground">Publicada em {item.publishedAt} · válida até {item.expiresAt}</p>
+                  <p className="mt-4 text-xs text-muted-foreground">Publicada em {formatDateBR(item.publishedAt)} · válida até {formatDateBR(item.expiresAt)}</p>
                   {values.pdfUrl && <a className="mt-3 inline-flex text-sm font-medium text-primary" href={`/api/news/${item.id}/pdf`} target="_blank" rel="noreferrer">Visualizar PDF</a>}
                   {isManager && (
                     <details className="mt-4 border-t pt-3">

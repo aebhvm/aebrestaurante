@@ -12,7 +12,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { getTasks, getUsers } from "@/lib/data";
 import { getSession } from "@/lib/session";
-import { priorityLabels, taskStatusLabels, todayISO } from "@/lib/utils";
+import { formatDateBR, priorityLabels, taskStatusLabels, todayISO } from "@/lib/utils";
 
 export default async function TasksPage({ searchParams }: { searchParams: Promise<{ date?: string; status?: string; ok?: string; erro?: string }> }) {
   const session = (await getSession())!;
@@ -43,7 +43,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                   <TR key={task.id}>
                     <TD><p className="font-medium">{task.title}</p><p className="text-xs text-muted-foreground">{task.description}</p></TD>
                     <TD>{task.responsible?.name ?? "-"}</TD>
-                    <TD>{task.taskDate} {task.taskTime}</TD>
+                    <TD>{formatDateBR(task.taskDate)} {task.taskTime}</TD>
                     <TD><Badge>{priorityLabels[task.priority] ?? task.priority}</Badge></TD>
                     <TD><Badge variant={task.status === "concluido" ? "secondary" : "default"}>{taskStatusLabels[task.status] ?? task.status}</Badge></TD>
                     <TD className="align-top">
